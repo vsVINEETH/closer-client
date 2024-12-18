@@ -16,7 +16,7 @@ const CropImage: React.FC<CropImageProps> = ({
   onCropComplete,
   onCancel,
 }) => {
-  const [crop, setCrop] = useState<Crop>({ aspect });
+  const [crop, setCrop] = useState<Crop>({ aspec });
   const imageRef = useRef<HTMLImageElement | null>(null);
 
   const handleCropComplete = (pixelCrop: PixelCrop) => {
