@@ -57,9 +57,7 @@ const BlockTable: React.FC = () => {
         console.log(response.data);
         setUsers(response.data)
     }
-    // setUsers(users.map(user => 
-    //   user.id === id ? { ...user, status: 'Active' } : user
-    // ));
+
   };
 
   return (
