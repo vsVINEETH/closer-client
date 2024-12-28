@@ -18,7 +18,7 @@ const sideBarList: SideBarList[] = [
     {href:"/admin/subscription", text:'Subscription'},
     {href:"/admin/employees", text:'Employees'},
     {href:"/admin/users", text:'Users'},
-    {href:"#", text:'Events'},
+    {href:"/admin/events", text:'Events'},
     {href:"#", text:'Reports'},
   ]
   
