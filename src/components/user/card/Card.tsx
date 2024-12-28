@@ -24,6 +24,15 @@ export interface UserDTO {
   createdAt?: string | Date;
 }
 
+interface Advertisement {
+  id: string,
+  title: string,
+  subtitle: string,
+  content: string,
+  image:string[],
+  createdAt: string,
+}
+
 const dummy = [
   {
     _id: "12345",
@@ -109,13 +118,32 @@ const ProfileCard: React.FC = () => {
   const [data, setData] = useState<UserDTO[]>(dummy);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const {  handleRequest } = useAxios();
+  const [swipeCount, setSwipeCount] = useState<number>(0);
+  const [ads, setAds] = useState<Advertisement[]>([]);
+  const [showingAd, setShowingAd] = useState<boolean>(false); // New state to handle ad display
+  const { handleRequest } = useAxios();
 
   const userInfo = useSelector((state: RootState) => state.user.userInfo);
+  const isPrimeUser = userInfo?.prime?.isPrime;
 
   useEffect(() => {
     getData();
   }, []);
+
+  const fetchAds = async () => {
+    const response = await handleRequest({
+      url: "/api/user/advertisements",
+      method: "GET",
+    });
+
+    if (response.error) {
+      console.error(response.error);
+    }
+
+    if (response.data) {
+      setAds(response.data);
+    }
+  };
 
   const getData = async () => {
     const response = await handleRequest({
@@ -129,64 +157,90 @@ const ProfileCard: React.FC = () => {
     }
 
     if (response.data) {
-      console.log(response.data)
       setData(response.data);
+      fetchAds();
     }
   };
 
   const currentUser: UserDTO = data[currentIndex];
+  const ad = ads[0];
 
   const handleNextUser = () => {
-    if (currentIndex < data.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+    if (swipeCount % 4 === 3 && !isPrimeUser) {
+ 
+      setShowingAd(true);
+      setSwipeCount((prev) => prev + 1);
+
+      setTimeout(() => {
+        setShowingAd(false);
+        if (currentIndex < data.length - 1) {
+          setCurrentIndex((prev) => prev + 1);
+        } else {
+          infoToast("No more users to show.");
+        }
+      }, 5000);
+
+      return;
+    }
+
+    // Normal user swiping logic
+    if ( currentIndex < data.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
+      setSwipeCount((prev) => prev + 1);
     } else {
       infoToast("No more users to show.");
     }
   };
 
   const handlePreviousUser = () => {
+    if(!isPrimeUser){
+      infoToast('This is an prime feature');
+      return;
+    }
     if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
+      setCurrentIndex((prev) => prev - 1);
     } else {
       infoToast("You are already at the first user.");
     }
   };
 
-  const handleBlockUser = async() => {
+  const handleBlockUser = async () => {
     const response = await handleRequest({
-      url:'/api/user/block',
-      method:'PUT',
-      data:{
+      url: "/api/user/block",
+      method: "PUT",
+      data: {
         blockedId: currentUser?._id,
-        id: userInfo?.id
-      }
-    })
-    if(response.error){
-      errorToast(response.error)
+        id: userInfo?.id,
+      },
+    });
+
+    if (response.error) {
+      errorToast(response.error);
     }
-    if(response.data){
+
+    if (response.data) {
       setData(response.data);
       successToast(`${currentUser?.username} has been blocked.`);
       setIsModalOpen(false);
       handleNextUser();
     }
-
   };
 
   const handleReportUser = async () => {
-    console.log(currentUser,'lop')
     const response = await handleRequest({
-      url:'/api/user/report',
-      method:'PUT',
-      data:{
-        reportedId: currentUser._id,
-        id: userInfo?.id
-      }
-    })
-    if(response.error){
-      errorToast(response.error)
+      url: "/api/user/report",
+      method: "PUT",
+      data: {
+        reportedId: currentUser?._id,
+        id: userInfo?.id,
+      },
+    });
+
+    if (response.error) {
+      errorToast(response.error);
     }
-    if(response.data){
+
+    if (response.data) {
       setData(response.data);
       successToast(`${currentUser?.username} has been reported.`);
       setIsModalOpen(false);
@@ -196,65 +250,76 @@ const ProfileCard: React.FC = () => {
 
   return (
     <div className="min-w-min max-w-sm rounded-3xl overflow-hidden shadow-lg">
-      {/* Card Image with Gradient Overlay */}
-      <div className="relative h-[400px]">
-        <img
-          src={
-            currentUser?.image && currentUser?.image[0]
-              ? currentUser?.image[0]
-              : "https://img.freepik.com/free-photo/background_53876-32170.jpg"
-          }
-          alt="Profile"
-          className="w-full h-full object-cover"
-        />
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-
-        {/* Info Button - Top Right */}
-        <button
-          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center"
-          onClick={() => setIsModalOpen(true)}
-        >
-          <Info className="w-5 h-5 text-white" />
-        </button>
-
-        {/* User Info - Bottom Left */}
-        <div className="absolute bottom-20 left-4 text-white">
-          <h3 className="text-xl font-semibold">
-            {currentUser?.username},{" "}
-            {currentUser?.dob
-              ? new Date().getFullYear() -
-                new Date(currentUser?.dob).getFullYear()
-              : "N/A"}
-          </h3>
-          {/* <div className="flex items-center gap-1 text-sm">
-            <span>{currentUser.location}</span>
-          </div> */}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="absolute bottom-4 left-0 right-0 flex justify-center items-center gap-4">
-          <button
-            className="w-12 h-12 rounded-full bg-yellow-400 flex items-center justify-center shadow-lg transform transition hover:scale-105"
-            onClick={handlePreviousUser}
-          >
-            <RotateCcw className="w-6 h-6 text-white" />
-          </button>
-
-          <Interest
-                  currentUserId={userInfo?.id}
-                  currentUserName={userInfo?.username}
-                  targetUserId={currentUser?._id}
+      {/* Ad Display for Non-Prime Users */}
+      {showingAd && !isPrimeUser ? (
+        <div className="relative h-[400px] bg-white rounded-xl shadow-lg flex flex-col items-center justify-between p-6">
+        <h2 className="text-2xl font-bold text-gray-800">Sponsored</h2>
+        {ad?.image[0] ? (
+          <img
+            src={ad.image[0]}
+            alt="Ad"
+            className="w-full h-48 object-cover rounded-lg border border-gray-200 shadow-md"
           />
-
-          <button
-            className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center shadow-lg transform transition hover:scale-105"
-            onClick={handleNextUser}
-          >
-            <X className="w-6 h-6 text-white" />
-          </button>
+        ) : (
+          <div className="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center border border-dashed border-gray-400">
+            <span className="text-gray-500">No Ad Available</span>
+          </div>
+        )}
+        <div className="text-center mt-4">
+          <h3 className="text-lg font-semibold text-gray-700">{ad?.title || "Advertisement"}</h3>
+          <p className="text-sm text-gray-500 mt-1">{ad?.content || "Check out this amazing ad!"}</p>
         </div>
+
       </div>
+      ) : (
+        <div className="relative h-[400px]">
+          {/* User Profile Card */}
+          <img
+            src={
+              currentUser?.image && currentUser?.image[0]
+                ? currentUser?.image[0]
+                : "https://img.freepik.com/free-photo/background_53876-32170.jpg"
+            }
+            alt="Profile"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          <button
+            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center"
+            onClick={() => setIsModalOpen(true)}
+          >
+            <Info className="w-5 h-5 text-white" />
+          </button>
+          <div className="absolute bottom-20 left-4 text-white">
+            <h3 className="text-xl font-semibold">
+              {currentUser?.username},{" "}
+              {currentUser?.dob
+                ? new Date().getFullYear() -
+                  new Date(currentUser?.dob).getFullYear()
+                : "N/A"}
+            </h3>
+          </div>
+          <div className="absolute bottom-4 left-0 right-0 flex justify-center items-center gap-4">
+            <button
+              className="w-12 h-12 rounded-full bg-yellow-400 flex items-center justify-center shadow-lg transform transition hover:scale-105"
+              onClick={handlePreviousUser}
+            >
+              <RotateCcw className="w-6 h-6 text-white" />
+            </button>
+            <Interest
+              currentUserId={userInfo?.id}
+              currentUserName={userInfo?.username}
+              targetUserId={currentUser?._id}
+            />
+            <button
+              className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center shadow-lg transform transition hover:scale-105"
+              onClick={handleNextUser}
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Modal */}
       <Modal
@@ -267,5 +332,6 @@ const ProfileCard: React.FC = () => {
     </div>
   );
 };
+
 
 export default ProfileCard;

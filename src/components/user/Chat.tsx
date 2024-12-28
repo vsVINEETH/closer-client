@@ -7,19 +7,30 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import useAxios from '@/hooks/useAxios/useAxios';
 
+interface Receiver {
+  username: string,
+  image: string,
+}
 const Chat: React.FC = () => {
+
   const searchParams = useSearchParams();
   const oppositeUserId = searchParams.get('id');
+
   const [messages, setMessages] = useState<{ sender: string; content: string }[]>([]);
   const [input, setInput] = useState<string>('');
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [recordedText, setRecordedText] = useState<string>('');
   const { socket } = useSocket();
-  const [oppoUser, setOppoUser] = useState();
-  const {handleRequest} = useAxios()
+  const [oppoUser, setOppoUser] = useState<Receiver>();
+  const {handleRequest} = useAxios();
 
   const user = useSelector((state: RootState) => state.user.userInfo);
+  
+  useEffect(() => {
+    fetchChat();
+  },[])
 
+  
   useEffect(() => {
     if (!socket || !user) return;
 
@@ -34,11 +45,41 @@ const Chat: React.FC = () => {
     };
   }, [socket, user]);
 
+
+
   useEffect(() => {
     if (recordedText) {
       setInput(recordedText);
     }
   }, [recordedText]);
+
+
+  const fetchChat = async () => {
+    if(!user || !oppositeUserId){return}
+    const response = await handleRequest({
+      url:'/api/user/chats',
+      method:'GET',
+      params:{
+        sender:user.id,
+        receiver: oppositeUserId,
+      }
+    });
+
+    if(response.error){
+      console.log('oopes')
+    };
+
+    if (response.data && response.data.length > 0) {
+      const receiverData = response.data[0].receiver
+      console.log(typeof receiverData)
+      if (receiverData) {
+        setOppoUser({
+          username: receiverData.username || 'Unknown', // Fallback for username
+          image: receiverData.image || 'default-image-url', // Fallback for image
+        });
+      }
+    }
+  }
 
 
   const handleSend = () => {
@@ -71,6 +112,7 @@ const Chat: React.FC = () => {
 
   return (
     <div className="w-full bg-gray-100 overflow-hidden rounded-lg shadow-md p-4">
+      <p>{oppoUser?.username}</p>
       <div className="h-96 overflow-y-auto bg-white rounded-lg p-4 mb-4 flex flex-col space-y-2">
         {messages.map((msg, idx) => (
           <div
