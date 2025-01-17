@@ -7,6 +7,7 @@ import ThemeToggle from "@/components/theme/Toggle";
 import LanguageChange from "../LanguageChange";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
+import GeolocationComponent from "./location/Geolocation";
 
 const settings = {
   icon: <UserCog size={20} />,
@@ -29,6 +30,7 @@ const Header: React.FC = () => {
         <p className="text-2xl font-extrabold text-white  dark:text-lightGray">
           Closer
         </p>
+        <GeolocationComponent/>
 
         {isAuthenticated && (
           <nav className="hidden md:flex space-x-6">
@@ -51,7 +53,7 @@ const Header: React.FC = () => {
               Chat
             </Link> */}
             <Link
-              href="/user/event"
+              href="/user/events"
               className="text-white font-semibold hover:text-gray-300 dark:text-lightGray dark:hover:text-gray-500"
             >
               Event

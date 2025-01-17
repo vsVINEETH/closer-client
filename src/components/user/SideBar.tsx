@@ -37,14 +37,46 @@ interface MatchedUsers {
   image: string;
 }
 
+interface Receiver {
+  _id: string,
+  username: string,
+  image: string,
+}
+
+interface Messages {
+  pair: string
+  messages:[{
+    createdAt: string, 
+    isRead: boolean,
+    message: string,
+    receiver: string,
+    sender: string,
+    type: string,
+    updatedAt: string,
+   _id: string,
+  }]
+}
+
+interface Chats {
+  
+  _id?: string,
+  sender: string,
+  receiver: {
+    _id: string,
+    username: string,
+    image: string,
+  },
+  message: string,
+  type: string,
+  isRead: boolean,
+  createdAt: string,
+}
+
 const SideBar: React.FC = () => {
   const userInfo = useSelector((state: RootState) => state.user.userInfo);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [messages, setMessages] = useState<string[]>([
-    "Hello!",
-    "How are you?",
-  ]);
+  const [messages, setMessages] = useState<Messages[]>([]);
   const [matches, setMatches] = useState<MatchedUsers[]>([]);
   const [activeTab, setActiveTab] = useState<string>("matches"); 
   const { handleRequest } = useAxios();
@@ -59,6 +91,7 @@ const SideBar: React.FC = () => {
       const { data } = payload;
       setNotifications((prev) => [...prev, data]);
       setActiveTab("notifications");
+      playNotificationSound();
     });
 
     return () => {
@@ -71,6 +104,22 @@ const SideBar: React.FC = () => {
     fetchData();
   }, [activeTab]);
 
+  const playNotificationSound = () => {
+    const audioContext = new (window.AudioContext )();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.type = "sine"; // You can change this to "square", "triangle", or "sawtooth", "sine" for different sounds
+    oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // Frequency in Hz (440 = A4)
+
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime); // Adjust volume
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.3); // Play sound for 0.2 seconds
+  };
+ 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
@@ -109,7 +158,10 @@ const SideBar: React.FC = () => {
     }
 
     if (response.data) {
-      setMessages(response.data);
+      console.log(response.data.matches);
+      console.log(response.data.messages);
+      
+      setMessages(response.data.messages);
     }
   };
 
@@ -187,7 +239,6 @@ const SideBar: React.FC = () => {
     setNotifications((prev) => prev.filter((_, i) => i !== index)); // Remove rejected notification
   };
 
-
   const handleUnmatch = async (interactorId: string) => {
     const response = await handleRequest({
       url:"/api/user/unmatch",
@@ -243,25 +294,64 @@ const SideBar: React.FC = () => {
         ) : (
           <p className="p-4 text-gray-600">No notifications yet.</p>
         );
-      case "messages":
-        return messages.length ? (
-          <div className="p-4 space-y-4">
-            {messages.map((msg, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-4 bg-gray-100 dark:bg-gray-800 rounded-md shadow-md"
-              >
-                {/* Example username, you can replace it with actual username logic */}
-                <p className="font-bold text-gray-700 dark:text-white">
-                  User {index + 1}
-                </p>
-                <p className="text-gray-600 dark:text-gray-400">{msg}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="p-4 text-gray-600">No messages yet.</p>
-        );
+        case "messages":
+          return messages.length ? (
+            <div className="p-4 space-y-4">
+              {matches.map((match, index) => {
+                // Find the relevant messages for the current match
+                const relevantMessages = messages.filter(
+                  (val) =>
+                    val.pair === `${match._id}-${userInfo?.id}` ||
+                    val.pair === `${userInfo?.id}-${match._id}`
+                );
+        
+                // Get the latest message
+                const latestMessage:Messages | null =
+                  relevantMessages.length > 0
+                    ? relevantMessages[relevantMessages.length - 1]
+                    : null;
+        
+                return (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-4 bg-gray-100 dark:bg-gray-800 rounded-md shadow-md"
+                    onClick={() => router.push(`/user/chat/?id=${match._id}`)}
+                  >
+                    <div className="flex items-center space-x-4">
+                      {/* User Icon */}
+                      <img
+                        src={match?.image[0] || "/default-avatar.png"}
+                        alt={`${match.username}'s avatar`}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                      <div className="">
+                        {/* Username */}
+                        <p className="font-bold text-gray-700 dark:text-white">
+                          {match.username}
+                        </p>
+                        {/* Latest Message */}
+                        <p className="text-gray-600 dark:text-gray-400 text-end">
+                          {latestMessage ? latestMessage.messages[latestMessage.messages.length-1].message : "No messages yet."}
+                        </p>
+                      </div>
+                      <p className="text-xs text-end">
+                        &nbsp; 
+                        {latestMessage && latestMessage.messages && latestMessage.messages.length > 0 
+                          ? new Date(
+                              latestMessage.messages[latestMessage.messages.length - 1].createdAt
+                            ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+                          : "No time available"}
+                      </p>
+
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="p-4 text-gray-600">No messages yet.</p>
+          );
+        
       case "matches":
         return matches.length ? (
           <div className="p-4 space-y-4">

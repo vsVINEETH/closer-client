@@ -11,6 +11,75 @@ interface Data {
   content: string,
 }
 
+interface DBD {
+  totalContent: [{
+    content: string,
+    createdAt: string,
+    downvotes: string[]
+    image: string[],
+    isListed: boolean,
+    shares: string[]
+    subtitle: string,
+    title: string,
+    updatedAt: string,
+    upvotes: string[]
+    _id: string,
+
+  }],
+
+  mostLiked: [{
+    title: string,
+    subtitle: string,
+    content: string,
+    image: string[],
+    upvotesCount: number,
+    createdAt: string,
+  }],
+
+  mostShared: [{
+    title: string,
+    subtitle: string,
+    content: string,
+    image: string[],
+    sharesCount: number,
+    createdAt: string,
+  }],
+
+  recentContent: [{
+    content: string,
+    createdAt: string,
+    downvotes: string[]
+    image: string[],
+    isListed: boolean,
+    shares: string[]
+    subtitle: string,
+    title: string,
+    updatedAt: string,
+    upvotes: string[]
+    _id: string,
+  }],
+
+  trendingContents: [{
+    content: string,
+    createdAt: string,
+    downvotes: string[]
+    image: string[],
+    isListed: boolean,
+    shares: string[]
+    subtitle: string,
+    title: string,
+    updatedAt: string,
+    upvotes: string[]
+    _id: string,
+  }],
+
+  popularCategory: [{
+    _id: string,
+    totalInteraction: number,
+  }]
+  
+}
+
 const blogEmojis = [
   "🥇", // First place
   "🥈", // Second place
@@ -27,7 +96,7 @@ const blogEmojis = [
 
 const Dashboard: React.FC = () => {
   const [currentTime] = useState(new Date().toLocaleTimeString())
-  const [data, setData] = useState<Data[]>([]);
+  const [dashboardData, setDashboardData] = useState<DBD | null>(null)
   const {handleRequest} = useAxios();
 
   useEffect(() => {
@@ -45,7 +114,7 @@ const Dashboard: React.FC = () => {
     }
     if(response.data){
       console.log(response.data)
-      setData(response.data);
+      setDashboardData(response.data);
     }
   }
 
@@ -67,7 +136,7 @@ const Dashboard: React.FC = () => {
             </div>
             {/* <span className="text-sm font-medium text-green-600">+12%</span> */}
           </div>
-          <h3 className="text-2xl font-bold text-gray-900">{data.length}</h3>
+          <h3 className="text-2xl font-bold text-gray-900">{dashboardData ? dashboardData.totalContent.length: 0}</h3>
           <p className="text-sm text-gray-500">Total blogs</p>
         </div>
 
@@ -79,7 +148,7 @@ const Dashboard: React.FC = () => {
             </div>
             {/* <span className="text-sm font-medium text-green-600">+8%</span> */}
           </div>
-          <h3 className="text-2xl font-bold text-gray-900">Power of Love</h3>
+          <h3 className="text-xl font-bold text-gray-900">{dashboardData ? dashboardData.mostLiked[0].title.toUpperCase(): 'Nothing'}</h3>
           <p className="text-sm text-gray-500">Most liked blog</p>
         </div>
 
@@ -91,7 +160,7 @@ const Dashboard: React.FC = () => {
             </div>
             {/* <span className="text-sm font-medium text-red-600">5 urgent</span> */}
           </div>
-          <h3 className="text-2xl font-bold text-gray-900">Power of Love</h3>
+          <h3 className="text-xl font-bold text-gray-900">{dashboardData ? dashboardData.mostShared[0].title.toUpperCase(): 'Nothing'}</h3>
           <p className="text-sm text-gray-500">Most shared blog</p>
         </div>
 
@@ -103,7 +172,7 @@ const Dashboard: React.FC = () => {
             </div>
             {/* <span className="text-sm font-medium text-green-600">+24%</span> */}
           </div>
-          <h3 className="text-2xl font-bold text-gray-900">Love</h3>
+          <h3 className="text-xl font-bold text-gray-900">{dashboardData ? dashboardData.popularCategory[0]._id.toUpperCase(): 'Nothing'}</h3>
           <p className="text-sm text-gray-500">Popular category</p>
         </div>
       </div>
@@ -114,7 +183,7 @@ const Dashboard: React.FC = () => {
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Uploads</h2>
           <div className="space-y-4 max-h-80 overflow-y-auto"> {/* Set max-height and overflow */}
-            {data.map((blog, index) => (
+            {dashboardData && dashboardData?.recentContent ?dashboardData?.recentContent.map((blog, index) => (
               <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
                 <div>
                   <p className="font-medium text-gray-800">{blog.title}</p>
@@ -122,7 +191,7 @@ const Dashboard: React.FC = () => {
                 </div>
                 <span className="text-sm text-gray-400">{blog.content}</span>
               </div>
-            ))}
+            )): <p>No more data</p>}
           </div>
         </div>
 
@@ -130,7 +199,7 @@ const Dashboard: React.FC = () => {
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Treding blogs</h2>
           <div className="space-y-4 max-h-80 overflow-y-auto">
-            {data.map((blog, index) => (
+            {dashboardData&& dashboardData.trendingContents.length ? dashboardData?.trendingContents.map((blog, index) => (
               <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
                 <div>
                   <p className="font-medium text-gray-800">{blog.title}</p>
@@ -141,11 +210,13 @@ const Dashboard: React.FC = () => {
                   task.priority === 'High' ? 'bg-red-100 text-red-600' :
                   task.priority === 'Medium' ? 'bg-yellow-100 text-yellow-600' :
                   'bg-green-100 text-green-600'
-                }`}>
+                 }`}>
                   {task.priority}
                 </span> */}
               </div>
-            ))}
+            )): 
+            <p>No more data</p>
+            }
           </div>
         </div>
       </div>

@@ -6,6 +6,9 @@ import { logout } from "@/store/slices/userSlice";
 import { Wallet, Shield, LogOut, ShieldBanIcon } from "lucide-react";
 import useAxios from "@/hooks/useAxios/useAxios";
 import { errorToast, infoToast } from "@/utils/toasts/toats";
+import { useSocket } from "@/context/SocketContext";
+import { RootState } from "@/store";
+import { useSelector } from "react-redux";
 
 const settingsItems = [
   { icon: <Wallet size={18} />, text: "Wallet", url: "/user/wallet" },
@@ -22,6 +25,8 @@ const DropDown: React.FC<DropDownProps> = ({ onMouseLeave }) => {
   const { handleRequest } = useAxios();
   const dispatch = useDispatch();
   const router = useRouter();
+  const { socket } = useSocket();
+  const user = useSelector((state: RootState) => state.user.userInfo)
 
   const handleLogout = async (): Promise<void> => {
     const response = await handleRequest({
@@ -37,6 +42,9 @@ const DropDown: React.FC<DropDownProps> = ({ onMouseLeave }) => {
     if (response.data) {
       dispatch(logout());
       router.push("/user/login");
+      if (socket) {
+        socket.emit('logout', user?.id);
+      }
       infoToast(response.data.message);
       return;
     }

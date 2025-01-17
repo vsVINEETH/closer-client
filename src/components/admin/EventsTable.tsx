@@ -5,18 +5,9 @@ import { ChevronsUpDown, SlidersHorizontal, UserPlus, Plus, Search, Pencil, Rewi
 import useAxios from '@/hooks/useAxios/useAxios';
 import { errorToast, successToast } from '@/utils/toasts/toats';
 
-interface AdvertisementData {
-    id: string,
-    title: string,
-    subtitle: string,
-    content:string,
-    image?:string,
-    isListed: boolean,
-    createdAt: string,
-}
 
 interface EventData {
-    id: string,
+    _id: string,
     title: string,
     description: string,
     image: string[],
@@ -24,7 +15,6 @@ interface EventData {
     locationURL: string,
     eventDate: string,
     createdAt: string,
-    isListed: boolean,
 }
 
 interface createFormData {
@@ -111,7 +101,7 @@ const EventTable: React.FC = () => {
     const fetchData = async () => {
         try {
             const response = await handleRequest({
-                url:'/api/admin/event',
+                url:'/api/admin/events',
                 method:'GET'
             })
             if(response.error){
@@ -146,14 +136,15 @@ const EventTable: React.FC = () => {
             data.append('title', createFormData.title);
             data.append('description', createFormData.description);
             images.forEach((image: File) => {
-                data.append('images', image); // 'images' is the field name you expect in the backend
+                data.append('images', image);
             });
             data.append('location', createFormData.location);
             data.append('locationURL', createFormData.locationURL);
-            data.append('eventDate', createFormData.eventDate);
+           data.append('eventDate', createFormData.eventDate);
 
+            console.log(data,'lll')
             const response = await handleRequest({
-                url: '/api/admin/event',
+                url: '/api/admin/events',
                 method:'POST',
                 data: data,
                 headers:{
@@ -166,12 +157,14 @@ const EventTable: React.FC = () => {
             }
 
             if(response.data){
-                setResult(response.data.data)
+                setResult([])
                 setCreateModal(false);
                 setImagePreviews([])
                 successToast('Successfully created')
             }
             
+        }else{
+            console.log('oops')
         }
 
     }
@@ -182,27 +175,10 @@ const EventTable: React.FC = () => {
         setImagePreviews([])
     }
 
-    const handleListing = async (id: string) => {
-        const response = await handleRequest({
-            url:'/api/admin/list_event',
-            method:'PATCH',
-            data:{
-                id: id
-            }
-        })
-
-        if(response.error){
-            errorToast(response.error)
-        }
-        if(response.data){
-            setResult(response.data);
-        }
-
-    }
 
     const handleDelete = async (id: string) => {
         const response = await handleRequest({
-            url:'/api/admin/event',
+            url:'/api/admin/events',
             method:'DELETE',
             data:{
                 id:id
@@ -220,7 +196,7 @@ const EventTable: React.FC = () => {
 
     const validation = () => {
         const newErrors: Errors = {};
-
+        
           if(!createFormData.title.trim()){
             newErrors.title = 'This field is required'
           }
@@ -235,22 +211,19 @@ const EventTable: React.FC = () => {
 
           if(!createFormData.locationURL.trim()) {
             newErrors.locationURL = 'This field is required'
-          }
-
-          if (!createFormData.eventDate.trim()) {
-            newErrors.eventDate = 'This field is required';
           } else {
-            const inputDate = new Date(createFormData.eventDate);
-            const currentDate = new Date();
-          
-            currentDate.setHours(0, 0, 0, 0);
-          
-            if (inputDate < currentDate) {
-              newErrors.eventDate = 'The date must be in the future';
-            }
+            try {
+                new URL(createFormData.locationURL);
+              } catch (e) {
+                newErrors.locationURL = "Invalid URL";
+              }          
           }
-          
 
+          if(!createFormData.eventDate.trim()){
+            newErrors.eventDate = 'This field is required'
+          }else if (new Date(createFormData.eventDate).setHours(0,0,0,0) <= new Date().setHours(0,0,0,0)){4
+            newErrors.eventDate = 'choose an future date'
+          }          
 
           if (images.length < 1){
             newErrors.image = 'minimum 1 image is required'
@@ -278,23 +251,19 @@ const EventTable: React.FC = () => {
 
         if(!editFormData?.locationURL.trim()){
             newErrors.locationURL = 'This field is required'
-        };
-
-
-        if (!editFormData?.eventDate.trim()) {
-            newErrors.eventDate = 'This field is required';
-          } else {
-            const inputDate = new Date(editFormData.eventDate);
-            const currentDate = new Date();
-          
-            // Reset the time portion of the current date to ensure only the date is compared
-            currentDate.setHours(0, 0, 0, 0);
-          
-            if (inputDate < currentDate) {
-              newErrors.eventDate = 'The date must be in the future';
-            }
+        } else {
+            try {
+                new URL(editFormData.locationURL);
+              } catch (e) {
+                newErrors.locationURL = "Invalid URL";
+              }          
           }
-          
+
+        if(!editFormData?.eventDate.trim()){
+            newErrors.eventDate = 'This field is required'
+          }else if (new Date(editFormData.eventDate).setHours(0,0,0,0) < new Date().setHours(0,0,0,0)){4
+            newErrors.eventDate = 'choose an future date'
+          }   
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0
@@ -370,15 +339,15 @@ const EventTable: React.FC = () => {
             if (startClone) startClone.setHours(0, 0, 0, 0);
             if (endClone) endClone.setHours(0, 0, 0, 0);
     
-            // Check if employeeDate is within the date range
+          
             const isWithinDateRange = 
                 (!startClone || contentDate >= startClone) &&
                 (!endClone || contentDate <= endClone);
     
             // Check if employee status matches
-            const isStatusMatch = status === undefined || ev.isListed === status;
+            // const isStatusMatch = status === undefined ;
     
-            return isWithinDateRange && isStatusMatch;
+            return isWithinDateRange //&& isStatusMatch;
         });
     
         setFilterData(filtered);
@@ -526,7 +495,7 @@ const EventTable: React.FC = () => {
 
         if (editValidation()) {
          const response = await handleRequest({
-            url:'/api/admin/advertisement',
+            url:'/api/admin/events',
             method:'PATCH',
             data: editFormData || {},
         });
@@ -550,7 +519,7 @@ const EventTable: React.FC = () => {
             <div>
             <h5
                 className="block font-sans text-2xl antialiased font-semibold leading-snug tracking-normal text-blue-gray-900 dark:text-lightGray">
-                Advertisement
+                Events
             </h5>
 
             </div>
@@ -575,7 +544,7 @@ const EventTable: React.FC = () => {
                 type="button" onClick={() => setCreateModal(true)} >
                
                 <Pencil size={15}/>
-                Add Content
+                Add Event
             </button>
             </div>
         </div>
@@ -614,7 +583,7 @@ const EventTable: React.FC = () => {
                 <p
                     className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
                     ID
-                    <ChevronsUpDown size={13} onClick={() => handleSort('id')}/>
+                    <ChevronsUpDown size={13} onClick={() => handleSort('_id')}/>
                 </p>
                 </th>
                 <th
@@ -653,7 +622,7 @@ const EventTable: React.FC = () => {
                 className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
                 <p
                     className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                     Status
+                     Event Date
                 </p>
                 </th>
                 <th
@@ -684,7 +653,7 @@ const EventTable: React.FC = () => {
                     <div className="flex flex-col">
                     <p
                         className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900 opacity-70">
-                        {value.id.split('').slice(7,16).join("")}
+                        {value._id.split('').slice(7,16).join("")}
                     </p>
                     </div>
                 </div>
@@ -716,7 +685,7 @@ const EventTable: React.FC = () => {
                     <p className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
                         {value.location}
                     </p>
-
+                    <a href={value.locationURL} target='blank' className='font-bold'>view</a>
                     </div>
                  </div>
                 </td>
@@ -731,43 +700,23 @@ const EventTable: React.FC = () => {
                  </div>
                 </td>
                 <td className="p-4">
-                <div className="w-max">
-                    <div
-                    className="relative grid items-center px-2 py-1 font-sans text-xs font-bold uppercase rounded-md select-none whitespace-nowrap bg-blue-gray-500/20 text-blue-gray-900">
-                        {!value.isListed ?
-                         <span className="">Unlisted</span>
-                         :
-                         <span className="">Listed</span>
-                        }
-                    
-                    </div>
-                </div>
+                <p className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
+                    {new Date(value.eventDate).setHours(0,0,0,0) < new Date().setHours(0,0,0,0) ? 'expired': new Date(value.eventDate).toLocaleDateString()}
+                </p>
+                
                 </td>
+
                 <td className="p-4">
                 <p className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                    {value.createdAt}
+                    {new Date(value.createdAt).toLocaleDateString()}
                 </p>
+                
                 </td>
                 <td className="p-4">
-                <button
-                    className="relative h-10 max-h-[40px] w-24 max-w-[70px] select-none rounded-lg text-center align-middle font-sans text-xs font-medium uppercase text-gray-900 transition-all hover:bg-gray-900/10 active:bg-gray-900/20 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none border dark:border-lightGray dark:bg-lightGray dark:text-darkGray "
-                    type="button"
-                    onClick={() => handleListing(value.id)}
-                    >
-                        {!value.isListed ? 
-                        <span className="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2 dark:text-darkGray">
-                            List
-                        </span> 
-                        :
-                        <span className="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2 dark:text-darkGray">
-                            Unlist
-                        </span>
-                        }
-                </button>
                 <button
                     className="relative ml-2 h-10 max-h-[40px] w-24 max-w-[70px] select-none rounded-lg text-center align-middle font-sans text-xs font-medium uppercase text-gray-900 transition-all hover:bg-gray-900/10 active:bg-gray-900/20 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none border dark:border-lightGray dark:bg-lightGray dark:text-darkGray "
                     type="button"
-                    onClick={() => handleDelete(value.id)}
+                    onClick={() => handleDelete(value._id)}
                     >
                         <span className="absolute  transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2 dark:text-darkGray">
                             Delete
@@ -813,7 +762,7 @@ const EventTable: React.FC = () => {
         {createModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
                 <div className="bg-white p-4 rounded-md shadow-lg max-w-md">
-                <h1 className="text-center text-xl font-semibold">Create Advertisement</h1>
+                <h1 className="text-center text-xl font-semibold">Create Event</h1>
                 <form className="mx-auto max-w-xs flex flex-col gap-4" onSubmit={handleSubmit}>
 
                     <div className="mt-1">
@@ -835,13 +784,43 @@ const EventTable: React.FC = () => {
                     <div className="flex flex-col">
                         <input
                         type="text"
-                        name="subtitle"
-                        placeholder="Enter subtitle"
+                        name="location"
+                        placeholder="Enter location"
                         className="border p-1 rounded-md"
                         onChange={handleChange}
                         />
-                        {errors && errors.description && (
-                        <span className="text-red-500 text-sm mt-1">{errors.description}</span>
+                        {errors && errors.location && (
+                        <span className="text-red-500 text-sm mt-1">{errors.location}</span>
+                        )}
+                    </div>
+                    </div>
+
+                    <div className="mt-1">
+                    <div className="flex flex-col">
+                        <input
+                        type="text"
+                        name="locationURL"
+                        placeholder="Enter locationURL"
+                        className="border p-1 rounded-md"
+                        onChange={handleChange}
+                        />
+                        {errors && errors.locationURL && (
+                        <span className="text-red-500 text-sm mt-1">{errors.locationURL}</span>
+                        )}
+                    </div>
+                    </div>
+
+                    <div className="mt-1">
+                    <div className="flex flex-col">
+                        <input
+                        type="date"
+                        name="eventDate"
+                        placeholder="Enter eventDate"
+                        className="border p-1 rounded-md"
+                        onChange={handleChange}
+                        />
+                        {errors && errors.eventDate && (
+                        <span className="text-red-500 text-sm mt-1">{errors.eventDate}</span>
                         )}
                     </div>
                     </div>
@@ -849,13 +828,13 @@ const EventTable: React.FC = () => {
                     <div className="mt-1">
                     <div className="flex flex-col">
                         <textarea
-                        name="content"
-                        placeholder="write content"
+                        name="description"
+                        placeholder="write description"
                         className="border p-1 rounded-md"
                         onChange={handleChange}
                         />
-                        {errors && errors.location && (
-                        <span className="text-red-500 text-sm mt-1">{errors.location}</span>
+                        {errors && errors.description && (
+                        <span className="text-red-500 text-sm mt-1">{errors.description}</span>
                         )}
                     </div>
                     </div>
@@ -970,7 +949,7 @@ const EventTable: React.FC = () => {
                 
 
                 {/* Status Input */}
-                <div className="mt-2 flex flex-col">
+                {/* <div className="mt-2 flex flex-col">
                     <label className="text-sm font-semibold">Status</label>
                     <select
                     name="status"
@@ -981,7 +960,7 @@ const EventTable: React.FC = () => {
                     <option value="-1">Unlisted</option>
                     <option value="1">Listed</option>
                     </select>
-                </div>
+                </div> */}
 
                 {/* Action Buttons */}
                 <div className="mt-1 flex justify-center">
@@ -990,7 +969,6 @@ const EventTable: React.FC = () => {
                     Apply
                     </button>
                 
-
                     <button
                     className="border p-1 rounded-md ml-2 bg-darkGray text-white"
                     type="button"
@@ -1022,24 +1000,55 @@ const EventTable: React.FC = () => {
                     className="w-full border rounded-md px-3 py-2 text-darkGray"
                     required
                 />
-                <label className="block text-sm font-medium mb-1 text-nightBlack">subtitle</label>
+                {errors.title && <span className='text-red-500'>{errors.title}</span>}
+
+                <label className="block text-sm font-medium mb-1 text-nightBlack">location</label>
                 <input
                     type="text"
-                    name='subtitle'
-                    value={editFormData?.description || ''}
+                    name='location'
+                    value={editFormData?.location || ''}
                     onChange={(e) =>
-                    setEditFormData((prev) => prev && { ...prev, subtitle: e.target.value })
+                    setEditFormData((prev) => prev && { ...prev, location: e.target.value })
                     }
                     className="w-full border rounded-md px-3 py-2 text-darkGray"
                     required
                 />
-                <label className="block text-sm font-medium mb-1 text-nightBlack">content</label>
+                {errors.location && <span className='text-red-500'>{errors.location}</span>}
+                <label className="block text-sm font-medium mb-1 text-nightBlack">locationURL</label>
                 <input
-                    type="textarea"
-                    name='content'
-                    value={editFormData?.location || ''}
+                    type="text"
+                    name='locationURL'
+                    value={editFormData?.locationURL || ''}
+                    onChange={(e) => 
+                        setEditFormData((prev) => prev && { ...prev, locationURL: e.target.value })
+                     }
+                    className="w-full border rounded-md px-3 py-2 text-darkGray"
+                    required
+                />
+                {errors.locationURL && <span className='text-red-500'>{errors.locationURL}</span>}
+                <label className="block text-sm font-medium mb-1 text-nightBlack"></label>
+                <input
+                    type="date"
+                    name="eventDate"
+                    value={
+                        editFormData?.eventDate 
+                            ? new Date(editFormData.eventDate).toISOString().split('T')[0] 
+                            : ''
+                    }
                     onChange={(e) =>
-                    setEditFormData((prev) => prev && { ...prev, content: e.target.value })
+                        setEditFormData((prev) => prev && { ...prev, eventDate: e.target.value })
+                    }
+                    className="w-full border rounded-md px-3 py-2 text-darkGray"
+                    required
+                />
+                {errors.eventDate && <span className='text-red-500'>{errors.eventDate}</span>}
+                <label className="block text-sm font-medium mb-1 text-nightBlack">description</label>
+                <input
+                    type="text"
+                    name='description'
+                    value={editFormData?.description || ''}
+                    onChange={(e) =>
+                    setEditFormData((prev) => prev && { ...prev, description: e.target.value })
                     }
                     className="w-full border rounded-md px-3 py-2 text-darkGray"
                     required

@@ -12,7 +12,6 @@ interface SocketContextValue {
 
 const SocketContext = createContext<SocketContextValue>({socket: null});
 
-
 export const SocketProvider: React.FC<{children: React.ReactNode}> = ({children}) => {
 
     const [socket, setSocket] = useState<Socket | null>(null);

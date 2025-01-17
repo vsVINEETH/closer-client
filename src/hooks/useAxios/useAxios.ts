@@ -7,7 +7,7 @@ import { RootState } from "@/store";
 import { logout as adminLogout } from "@/store/slices/adminSlice";
 import { logout as userLogout } from "@/store/slices/userSlice";
 import { logout as employeeLogout } from "@/store/slices/employeeSlice";
-import { infoToast, errorToast, successToast } from "@/utils/toasts/toats";
+import {  errorToast } from "@/utils/toasts/toats";
 
 interface RequestOptions {
   url: string;

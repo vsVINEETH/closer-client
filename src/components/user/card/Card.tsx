@@ -166,7 +166,7 @@ const ProfileCard: React.FC = () => {
   const ad = ads[0];
 
   const handleNextUser = () => {
-    if (swipeCount % 4 === 3 && !isPrimeUser) {
+    if (swipeCount % 2 === 1 && !isPrimeUser) {
  
       setShowingAd(true);
       setSwipeCount((prev) => prev + 1);
