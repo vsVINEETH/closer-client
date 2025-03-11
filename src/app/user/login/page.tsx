@@ -1,12 +1,14 @@
-import React, {useState, useEffect} from 'react'
-import Header from '@/components/user/Header';
-import Footer from '@/components/user/Footer';
-import LoginForm from '@/components/user/forms/LoginForm';
+import React from 'react'
+import Header from '@/components/reusables/Header';
+import Footer from '@/components/reusables/Footer';
+import LoginForm from '@/components/reusables/LoginForm';
+import { useTranslations } from 'next-intl';
 
 const Login: React.FC = () => {  
+  const t = useTranslations('Login')
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header/>
+    <div className="flex flex-col min-h-screen select-none caret-transparent">
+      <Header htmlFor='user'/>
 
         <div className="h-[100vh] items-center flex justify-center px-5 lg:px-0">
           <div className="max-w-screen-xl bg-white dark:bg-darkGray border dark:border-darkGray shadow sm:rounded-lg flex justify-center flex-1">
@@ -22,21 +24,21 @@ const Login: React.FC = () => {
               <div className=" flex flex-col items-center">
                 <div className="text-center">
                   <h1 className="text-2xl xl:text-4xl font-extrabold text-customPink dark:text-lightGray">
-                    Sign in to Closer
+                    {t('header')}
                   </h1>
                   <p className="text-[12px] text-gray-500 dark:text-lightGray">
-                    Hey enter your credentials to create your account
+                    {t('comment')}
                   </p>
                 </div>
 
-                <LoginForm/>
+                <LoginForm htmlFor='user'/>
                 
               </div>
             </div>
           </div>
         </div>
 
-      <Footer/>
+      <Footer htmlFor='user'/>
     </div>
   )
 }

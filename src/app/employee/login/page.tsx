@@ -1,11 +1,11 @@
 import React from 'react'
-import Header from '@/components/employee/Header'
-import Footer from '@/components/employee/Footer'
-import LoginForm from '@/components/employee/LoginForm'
+import Header from '@/components/reusables/Header'
+import Footer from '@/components/reusables/Footer'
+import LoginForm from '@/components/reusables/LoginForm'
 const Login: React.FC = () => {
   return (
-    <div className="flex flex-col min-h-screen">
-        <Header/>
+    <div className="flex flex-col min-h-screen select-none caret-transparent">
+        <Header htmlFor='employee'/>
             <div className="h-[100vh] items-center flex justify-center px-5 lg:px-0">
             <div className="max-w-screen-xl bg-white dark:bg-darkGray border dark:border-darkGray shadow sm:rounded-lg flex justify-center flex-1">
             <div className="flex-1 bg-white  dark:bg-darkGray text-center hidden md:flex">
@@ -28,13 +28,13 @@ const Login: React.FC = () => {
                     </p>
                 </div>
 
-                 <LoginForm/>
+                 <LoginForm htmlFor='employee'/>
 
                 </div>
             </div>
             </div>
             </div>
-        <Footer/>
+        <Footer htmlFor="employee"/>
     </div>
   )
 }

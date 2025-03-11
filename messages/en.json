@@ -1,5 +1,58 @@
 {
     "HomePage": {
-      "title": "Hello world!"
+      "title": "Closer"
+    },
+
+    "Header":{
+      "title":"Closer",
+      "signIn":"Sign in",
+      "home": "Home",
+      "blog": "Blogs",
+      "event": "Events"
+    },
+
+    "Footer":{
+      "title":"Closer",
+      "writing":"Connecting hearts and creating meaningful relationships. Find your perfect match today.",
+      "quickLinks":"Quick Links",
+      "homeLink":"Home",
+      "aboutLink":"About",
+      "servicesLink":"Services",
+      "contactLink": "Contact",
+      "followUs":"Follow Us",
+      "rights":"@2024 Closer. All rights reserved."
+    },
+
+    "LandingComponents":{
+      "titleOne":"Find Your",
+      "titleTwo":"Perfect Match",
+      "titleThree":"Today",
+      "description":"Life is too short for boring connections. Join thousands of singles who are already finding their special someone on our platform.",
+      "getStarted": "Get Started",
+      "signIn": "Sign in",
+      "cardOne":"Thousands of active users",
+      "cardTwo":"Meaningful conversations",
+      "cardThree":"Perfect match algorithm",
+      "match":"94% Match!",
+      "comment":"Based on your preferences"
+    },
+
+    "Login": {
+      "header":"Sign in to Closer",
+      "email":"Enter your email",
+      "password":"Enter your password",
+      "comment":"Hey enter your credentials to login",
+      "auth":"Sign in with google",
+      "signIn":"Sign In",
+      "noAccount":"Don't do you have an account ?",
+      "forgotPassword":"forgot password ?",
+       "or": "or"
+    },
+
+    "Sidebar":{
+      "matches":"Matches",
+      "messages":"Messages",
+      "notifications":"Notifications"
+
     }
   }

@@ -1,10 +1,12 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import useAxios from '@/hooks/useAxios/useAxios';
-import { ThumbsUp, ThumbsDown, AudioLines, Forward } from 'lucide-react';
-import { errorToast, infoToast, successToast } from '@/utils/toasts/toats';
+import { ThumbsUp, ThumbsDown, AudioLines, Forward} from 'lucide-react';
+import { errorToast, infoToast } from '@/utils/toasts/toast';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
+import { useFetch } from '@/hooks/fetchHooks/useUserFetch';
+import { useUserInteractions } from '@/hooks/crudHooks/user/useUserInteractions';
+
 interface Blog {
   id: string;
   title: string;
@@ -12,9 +14,9 @@ interface Blog {
   content: string;
   image: string[];
   createdAt: string;
-  upvotes: string[],
-  downvotes: string[],
-  shares: string[],
+  upvotes: string[];
+  downvotes: string[];
+  shares: string[];
 }
 
 interface BlogDetailProps {
@@ -24,7 +26,8 @@ interface BlogDetailProps {
 const BlogDetail: React.FC<BlogDetailProps> = ({ blogId }) => {
   const [blog, setBlog] = useState<Blog>();
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
-  const { handleRequest } = useAxios();
+  const {getBlogDetails} = useFetch();
+  const {manageBlogVoting, manageBlogSharing} = useUserInteractions()
   const user = useSelector((state: RootState) => state.user.userInfo);
 
   useEffect(() => {
@@ -35,41 +38,19 @@ const BlogDetail: React.FC<BlogDetailProps> = ({ blogId }) => {
 
   const fetchBlogDetail = async () => {
     if (!blogId) return;
-    const response = await handleRequest({
-      url: '/api/user/content_detail',
-      method: 'GET',
-      params: { id: blogId },
-    });
-
-    if (response.error) {
-      console.error(response.error);
-    }
+    const response = await getBlogDetails(blogId);
     if (response.data) {
       setBlog(response.data);
     }
   };
 
-
   const handleVote = async (voteType: string) => {
-    const response = await handleRequest({
-      url:'/api/user/content_vote',
-      method:'PATCH',
-      data:{
-        id:user?.id,
-        blogId,
-        voteType
-      }
-    });
-    
-    if(response.error){
-      console.log(response.error)
-    };
-
-    if(response.data){
+    if(!user?.id){return};
+    const response = await manageBlogVoting(user?.id, blogId, voteType);
+    if (response.data) {
       setBlog(response.data);
     }
-  }
-
+  };
 
   const handleShare = async () => {
     const shareData = {
@@ -77,59 +58,42 @@ const BlogDetail: React.FC<BlogDetailProps> = ({ blogId }) => {
       text: blog?.subtitle || 'Check out this amazing blog!',
       url: window.location.href,
     };
-  
+
     if (navigator.share) {
       try {
-        // Attempt to share via native sharing API
         await navigator.share(shareData);
-  
-        // Log the share on the server
-        const response = await handleRequest({
-          url: '/api/user/content_share',
-          method: 'PATCH',
-          data: {
-            id: user?.id,
-            blogId,
-          },
-        });
-  
-        if (response.error) {
-          console.error('Error logging share:', response.error);
-          errorToast('Something went wrong while logging the share.');
-        } else if (response.data) {
-          console.log('Share logged successfully:', response.data);
-          setBlog(response.data)
+        if(!user?.id){return}
+        const response = await manageBlogSharing(user?.id, blogId)
+        if (response.data) {
+          setBlog(response.data);
         }
       } catch (error) {
-        // Handle user cancelation or API error
+        console.error(error)
         errorToast('Failed to share the blog.');
-        console.error('Error sharing:', error);
       }
     } else {
-      // Fallback for browsers that don't support the share API
       try {
         await navigator.clipboard.writeText(shareData.url);
         infoToast('Link copied to clipboard');
       } catch (error) {
-        console.error('Error copying link:', error);
+        console.error(error);
         errorToast('Failed to copy the link.');
       }
     }
   };
-  
 
   const handleAudioSummarizer = () => {
-    if(!user?.prime?.isPrime){
+    if (!user?.prime?.isPrime) {
       infoToast('This feature only for prime members');
       return;
     }
     if (!blog || !blog.content) {
-      infoToast('No content available for audio summary.')
+      infoToast('No content available for audio summary.');
       return;
     }
 
     if (!('speechSynthesis' in window)) {
-      infoToast('Text-to-Speech is not supported in this browser.')
+      infoToast('Text-to-Speech is not supported in this browser.');
       return;
     }
 
@@ -150,51 +114,69 @@ const BlogDetail: React.FC<BlogDetailProps> = ({ blogId }) => {
     utterance.onerror = (event) => {
       console.error('Error in speech synthesis:', event.error);
       setIsGeneratingAudio(false);
-      errorToast('An error occurred during audio summary.')
+      errorToast('An error occurred during audio summary.');
     };
 
     speechSynthesis.speak(utterance);
   };
 
   return (
-    <div className="p-8 bg-gradient-to-b min-h-screen">
+    <div className="container mx-auto p-6">
+     
       {blog ? (
-        <div className="max-w-7xl mx-auto bg-white p-8 rounded-xl shadow-2xl min-w-[320px]">
-          <h1 className="text-5xl font-extrabold text-gray-800 mb-6">{blog.title}</h1>
-          <p className="text-2xl text-gray-600 mb-8">{blog.subtitle}</p>
-          <img
-            src={blog?.image[0]}
-            alt={blog.title}
-            className="w-full h-[500px] object-cover rounded-xl mb-8 shadow-2xl"
-          />
-          <div className="text-gray-800 text-xl leading-relaxed mb-8">{blog.content}</div>
+        <div className="bg-white dark:bg-darkGray p-8 rounded-xl shadow-lg max-w-3xl mx-auto">
+          <div className="space-y-6">
+            <h1 className="text-4xl font-semibold text-gray-900 dark:text-lightGray">{blog.title}</h1>
+            <p className="text-xl text-gray-600 dark:text-gray-400 font-semibold">{blog.subtitle}</p>
+            <img
+              src={blog?.image[0]}
+              alt={blog.title}
+              className="w-full h-[400px] object-cover rounded-lg shadow-md"
+            />
+            <div className="text-lg text-gray-800 leading-relaxed dark:text-gray-400">{blog.content}</div>
+          </div>
 
-          <div className="flex justify-between items-center">
-            <div className="flex gap-4">
-              <div className="flex gap-2">
-                <ThumbsUp size={25} onClick={() => handleVote('upvote')} 
-                className={`cursor-pointer ${blog.upvotes.includes(user ? user.id: '') ? 'fill-customPink' : ''}`}
-                />
-                <p>{blog?.upvotes ? blog.upvotes.length : 0}</p>
-              </div>
-              <div className="flex gap-2">
-                <ThumbsDown size={25} onClick={() => handleVote('downvote')}
-                className={`cursor-pointer ${blog.downvotes.includes(user ? user.id: '') ? 'fill-customPink' : ''}`}
-                />
-                <p>{blog?.downvotes ? blog.downvotes.length : 0 }</p>
-              </div>
+          <div className="mt-8 flex justify-between items-center space-x-6">
+            <div className="flex gap-6 items-center">
+              <button
+                onClick={() => handleVote('upvote')}
+                className={`flex items-center gap-2 py-2 px-4 rounded-lg transition-all ${
+                  blog.upvotes.includes(user?.id || '') ? 'bg-customPink text-white' : 'bg-gray-200 text-gray-600'
+                }`}
+              >
+                <ThumbsUp size={20} />
+                <span>{blog?.upvotes.length || 0}</span>
+              </button>
+              <button
+                onClick={() => handleVote('downvote')}
+                className={`flex items-center gap-2 py-2 px-4 rounded-lg transition-all ${
+                  blog.downvotes.includes(user?.id || '') ? 'bg-customPink text-white' : 'bg-gray-200 text-gray-600'
+                }`}
+              >
+                <ThumbsDown size={20} />
+                <span>{blog?.downvotes.length || 0}</span>
+              </button>
             </div>
-            <div className="flex gap-4">
-              <AudioLines
-                size={25}
+            <div className="flex gap-6 items-center">
+              <button
                 onClick={handleAudioSummarizer}
-                className={isGeneratingAudio ? 'animate-spin text-blue-500' : 'cursor-pointer'}
-              />
-              <Forward size={25} onClick={handleShare} 
-              className='cursor-pointer'
-              />
-              <span>{blog?.shares ? blog.shares.length : 0}</span>
+                className={`p-3 rounded-lg transition-all ${
+                  isGeneratingAudio ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'
+                }`}
+              >
+                <AudioLines size={20} />
+              </button>
+              <button
+                onClick={handleShare}
+                className="p-3 rounded-lg bg-gray-200 text-gray-600 hover:bg-blue-500 hover:text-white transition-all"
+              >
+                <Forward size={20} />
+              </button>
             </div>
+          </div>
+
+          <div className="flex justify-end mt-6">
+            <span className="text-gray-500 dark:text-400">{blog?.shares.length || 0} Shares</span>
           </div>
         </div>
       ) : (
@@ -205,3 +187,4 @@ const BlogDetail: React.FC<BlogDetailProps> = ({ blogId }) => {
 };
 
 export default BlogDetail;
+

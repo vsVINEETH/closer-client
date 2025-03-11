@@ -1,14 +1,20 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+
 import {NextIntlClientProvider} from 'next-intl';
 import {getLocale, getMessages} from 'next-intl/server';
 import Providers from '@/store/Providers';
 import { ThemeProvider } from "@/components/theme/DarkMode";
 import { SessionWrapper } from "@/components/SessionWrapper";
-import { SocketProvider } from "@/context/SocketContext";
-import { ToastContainer, toast } from 'react-toastify';
+import SocketProvider from "@/providers/SocketProviders";
+import { LoadingProvider } from "@/context/LoadingContext";
+import { ToastContainer } from 'react-toastify';
+import Call from '@/components/user/message/Call';
+import CallNotification from '@/components/user/message/CallNotification';
+import ChatBot from "@/components/Chatbot";
 import 'react-toastify/dist/ReactToastify.css';
 import 'react-image-crop/dist/ReactCrop.css'
+import "animate.css"; 
 import "./globals.css";
 
 const geistSans = localFont({
@@ -40,21 +46,25 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    // 
 
         <html lang={locale}>
             <body
-              className={`${geistSans.variable} ${geistMono.variable} antialiased dark:bg-nightBlack`}
+              className={`${geistSans.variable} ${geistMono.variable} antialiased dark:bg-nightBlack `}
             >
               <ToastContainer/>
               <NextIntlClientProvider messages={messages}>
                 <Providers>
                   <ThemeProvider>
                   <SessionWrapper>
-                    <SocketProvider>
-                    {children}
-                    </SocketProvider>
-                  </SessionWrapper>
+                    <SocketProvider> 
+                    <CallNotification/> 
+                     <Call/>
+                      <LoadingProvider>
+                        {children}
+                       </LoadingProvider>
+                      <ChatBot/> 
+                    </SocketProvider>   
+                    </SessionWrapper>
                   </ThemeProvider>
                 </Providers>
               </NextIntlClientProvider>

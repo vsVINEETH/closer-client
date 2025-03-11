@@ -1,13 +1,10 @@
 'use client'
 import React from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation';
-import { useSelector, useDispatch } from 'react-redux';
-import { store, RootState } from '@/store';
-import { logout } from '@/store/slices/employeeSlice';
-import useAxios from '@/hooks/useAxios/useAxios';
-import { errorToast, infoToast } from '@/utils/toasts/toats';
-
+import { errorToast, infoToast } from '@/utils/toasts/toast';
+import { logoutConfirm } from '@/utils/sweet_alert/sweetAlert';
+import { usePathname } from 'next/navigation'
+import { useAuth } from '@/hooks/authHooks/useEmployeAuth';
 
 interface SideBarList {
     href: string,
@@ -22,28 +19,20 @@ const sideBarList: SideBarList[] = [
   ]
  
 const SideBar: React.FC = () => {
-  const dispatch = useDispatch()
-  const router = useRouter()
-  const {handleRequest} = useAxios()
+  const { handleLogout } = useAuth()
+  const pathname = usePathname()
 
-  const empAth = useSelector((state: RootState) => state.employee.isAuthenticated);
-  const empInfo = useSelector((state: RootState) => state.employee.employeeInfo);
-
-  const handleLogout = async (): Promise<void> => {
-    const response = await handleRequest({
-      url:'/api/employee/logout',
-      method:'DELETE',
-    })
-
-    if(response.error){
-      errorToast(response.error)
+  const proceedLogout = async (): Promise<void> => {
+    try {
+      const confirm = await logoutConfirm();
+      if(!confirm){ return };
+      await handleLogout();
+      infoToast('Logged out successfully');
+    } catch (error) {
+      console.error(error);
+      errorToast('Unable to logout')
     }
-    if(response.data){
-      dispatch(logout());
-      router.push('/employee/login')
-      infoToast(response.data)
-    }
-    
+
   }
  
   return (
@@ -55,17 +44,21 @@ const SideBar: React.FC = () => {
         </div>
 
         <nav className="py-4 flex flex-col justify-evenly">
-            {sideBarList.map((item, index) => (
-            <Link
-            key={index}
-            href={item.href}
-            className="block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:hover:text-gray-800 dark:text-lightGray"
-            >
-                {item.text}
-            </Link>
-            ))}
-            <p className='block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:hover:text-gray-800 dark:text-lightGray'
-            onClick={handleLogout}
+        {sideBarList.map((item, index) => {
+         const isActive = pathname === item.href
+            return (
+                <Link
+                    key={index}
+                    href={item.href}
+                    className={`block px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:hover:text-gray-500 dark:text-lightGray 
+                    ${isActive ? 'bg-customPink text-white dark:bg-darkGray dark:text-white' : ''}`}
+                >
+                    {item.text}
+                </Link>
+            )
+          })}
+            <p className='block px-4 py-2 text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:hover:text-gray-800 dark:text-lightGray'
+            onClick={proceedLogout}
             >
               Logout
             </p>

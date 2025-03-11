@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import useAxios from '@/hooks/useAxios/useAxios';
+import { useFetch } from '@/hooks/fetchHooks/useUserFetch';
 
 interface Blog {
   id: string;
@@ -12,121 +12,143 @@ interface Blog {
   createdAt: string;
 }
 
+interface FilterOption {
+  startDate: string;
+  endDate: string;
+  status: boolean | undefined;
+}
+
 const Blog: React.FC = () => {
   const [blogs, setBlogs] = useState<Blog[]>([]);
-  const [filteredBlogs, setFilteredBlogs] = useState<Blog[]>([]);
+  const [searchValue, setSearchValue] = useState<string>('');
+  const [sortOption, setSortOption] = useState<string>('Newest');
+  const [filterOption] = useState<FilterOption>({ startDate: '', endDate: '', status: undefined });
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortOption, setSortOption] = useState('Newest');
-  const { handleRequest } = useAxios();
+  const [debouncedSearchValue, setDebouncedSearchValue] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize] = useState<number>(3);
+  const [totalPage, setTotal] = useState<number>(0);
+
+  const {getBlogData} = useFetch();
   const router = useRouter();
 
   useEffect(() => {
-    fetchBlog();
-  }, []);
+    const handler = setTimeout(() => {
+      setDebouncedSearchValue(searchValue);
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [searchValue]);
+
+  const searchFilterSortParams = {
+    search: searchValue || '',
+    startDate: filterOption.startDate || '',
+    endDate: filterOption.endDate || '',
+    status: filterOption.status,
+    sortColumn: 'createdAt',
+    sortDirection: sortOption === 'Newest' ? 'desc' : 'asc',
+    page: currentPage,
+    pageSize,
+  }
 
   useEffect(() => {
-    applyFiltersAndSort();
-  }, [blogs, searchQuery, sortOption]);
+    fetchBlogs();
+  }, [debouncedSearchValue, filterOption, currentPage, pageSize, sortOption]);
 
-  const fetchBlog = async () => {
-    const response = await handleRequest({
-      url: '/api/employee/content_data',
-      method: 'GET',
-    });
-
-    if (response.error) {
-      console.error('Something happened');
-    }
+  const fetchBlogs = async () => {
+    const response = await getBlogData(searchFilterSortParams);
 
     if (response.data) {
-      setBlogs(response.data.data);
+      setBlogs(response.data.data.contents);
+      setTotal(response.data.data.total);
     }
   };
 
-  const applyFiltersAndSort = () => {
-    let updatedBlogs = [...blogs];
-
-    // Apply search filter
-    if (searchQuery) {
-      updatedBlogs = updatedBlogs.filter((blog) =>
-        blog.title.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+  const handleNext = () => {
+    if (currentPage < Math.ceil(totalPage / pageSize)) {
+        setCurrentPage((prevPage) => prevPage + 1);
     }
+};
 
-    // Apply sorting
-    if (sortOption === 'Newest') {
-      updatedBlogs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    } else if (sortOption === 'Oldest') {
-      updatedBlogs.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-    } else if (sortOption === 'Title A-Z') {
-      updatedBlogs.sort((a, b) => a.title.localeCompare(b.title));
-    } else if (sortOption === 'Title Z-A') {
-      updatedBlogs.sort((a, b) => b.title.localeCompare(a.title));
+const handlePrevious = () => {
+    if (currentPage > 1) {
+        setCurrentPage((prevPage) => prevPage - 1);
     }
-
-    setFilteredBlogs(updatedBlogs);
-  };
+};
 
   return (
     <div className="p-6 bg-gradient-to-b min-h-screen">
-      <h1 className="text-3xl text-center font-extrabold mb-6  text-customPink">
-        Enhance your relationships
-      </h1>
+      <h1 className="text-3xl text-center font-extrabold mb-6 text-customPink dark:text-lightGray">Enhance your relationships</h1>
 
-      {/* Search and Filter Controls */}
+      {/* Search and Sort Controls */}
       <div className="flex flex-wrap gap-4 justify-center mb-8">
         <input
           type="text"
-          placeholder="Search blogs by title..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+          placeholder="Search blogs..."
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
         <select
           value={sortOption}
           onChange={(e) => setSortOption(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-        >
+          className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+         >
           <option value="Newest">Newest</option>
           <option value="Oldest">Oldest</option>
-          <option value="Title A-Z">Title A-Z</option>
-          <option value="Title Z-A">Title Z-A</option>
         </select>
       </div>
 
       {/* Blog Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {filteredBlogs.map((blog) => (
-          <div
-            key={blog.id}
-            className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
-          >
-            <img
-              src={blog.image[0]}
-              alt={blog.title}
-              className="w-full h-48 object-cover"
-            />
-            <div className="p-5">
-              <h2 className="text-2xl font-bold text-gray-800 mb-3">{blog.title}</h2>
-              <p className="text-gray-600 text-sm mb-4">{blog.subtitle}</p>
-              <button
-                className="px-2 py-2 bg-customPink text-white font-semibold rounded-lg hover:bg-red-400 transition-colors duration-300"
-                onClick={() => router.push(`/user/blog/${blog.id}`)}
-              >
-                Read More
-              </button>
+      <div className="grid grid-cols-1  sm:grid-cols-2 md:grid-cols-3 gap-6">
+        {blogs ? (
+          blogs.map((blog) => (
+            <div
+              key={blog.id}
+              className="bg-white rounded-2xl dark:bg-darkGray shadow-xl dark:border-gray-700 dark:hover:shadow-lg dark:shadow-[0px_4px_15px_rgba(50,180,255,0.4)]) transition-all duration-300 border border-gray-200 overflow-hidden"
+            >
+              <img src={blog.image[0]} alt={blog.title} className="w-full h-52 object-cover rounded-t-2xl" />
+              <div className="p-6">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-lightGray mb-2">{blog.title}</h2>
+                <p className="text-gray-700 text-sm mb-4 dark:text-gray-400">{blog.subtitle}</p>
+                <button
+                  className="w-full py-2 text-white font-semibold rounded-lg dark:bg-gray-600 bg-customPink hover:opacity-90 "
+                  onClick={() => router.push(`/user/blog/${blog.id}`)}
+                >
+                  Read More
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          <div className="text-center text-gray-500 dark:text-lightGray mt-8">No blogs found.</div>
+        )}
       </div>
 
-      {/* No Results Message */}
-      {filteredBlogs.length === 0 && (
-        <div className="text-center text-gray-500 mt-8">
-          No blogs found. Try a different search or filter.
-        </div>
-      )}
+      {/* Pagination Controls */}
+
+      <div className="flex justify-center mt-6 space-x-4">
+      <button 
+            onClick={handlePrevious} 
+            disabled={currentPage === 1}
+            className={`px-4 py-2 rounded-lg ${currentPage === 1 ? 'bg-gray-300 dark:text-gray-600' : 'bg-customPink text-white hover:bg-red-500'}`}
+            >
+            Previous
+        </button>
+
+        <span className="px-4 py-2 font-semibold dark:text-lightGray">
+          Page {currentPage} of {Math.ceil(totalPage / pageSize)}
+        </span>
+
+          <button
+              onClick={handleNext}
+              disabled={currentPage >= Math.ceil(totalPage / pageSize)}
+                className={`px-4 py-2 rounded-lg ${currentPage === totalPage ? 'bg-gray-300 dark:text-gray-600' : 'bg-customPink text-white hover:bg-red-500'}`}
+              >  
+              Next
+          </button>
+      </div>
+      
     </div>
   );
 };

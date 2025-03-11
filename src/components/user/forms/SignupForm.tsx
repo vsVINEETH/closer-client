@@ -1,56 +1,29 @@
 "use client";
-import React, { useState} from "react";
+import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import useAxios from "@/hooks/useAxios/useAxios";
-import { warnToast } from "@/utils/toasts/toats";
+import useAxios from "@/hooks/axiosHooks/useAxios";
+import { warnToast } from "@/utils/toasts/toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { signupSchema } from "@/schemas/user/signupSchema";
+import { z } from "zod";
 
-interface FormData {
-  username: string;
-  email: string;
-  phone: string;
-  password: string;
-  confirmPassword: string;
-}
-
-interface Errors {
-  username?: string;
-  email?: string;
-  phone?: string;
-  password?: string;
-  confirmPassword?: string;
-}
+type SignupFormData = z.infer<typeof signupSchema>;
 
 const SignupForm: React.FC = () => {
-  const [formData, setFormData] = useState<FormData>({
-    username: "",
-    email: "",
-    phone: "",
-    password: "",
-    confirmPassword: "",
-  });
-  const [errors, setErrors] = useState<Errors>({});
-  const { loading, handleRequest } = useAxios();
+  const { register, handleSubmit, formState: { errors }, clearErrors} = useForm<SignupFormData>({ resolver: zodResolver(signupSchema),});
+
+  const { handleRequest } = useAxios();
   const router = useRouter();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const onSubmit = async (data: SignupFormData) => {
+      localStorage.setItem("email", data.email);
 
-    setErrors({});
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (validation()) {
-      localStorage.setItem("email", formData.email);
       const response = await handleRequest({
         url: "/api/user/signup",
         method: "POST",
-        data: formData,
+        data: data,
       });
 
       if (response.error) {
@@ -60,99 +33,67 @@ const SignupForm: React.FC = () => {
       if (response.data) {
         router.push("/user/signup/otp");
       }
-    }
   };
 
-  const validation = (): boolean => {
-    const newErrors: Errors = {};
-    const emailRegex: RegExp =
-      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
-    if (!formData.username.trim()) {
-      newErrors.username = "Name is required";
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!emailRegex.test(formData.email)) {
-      newErrors.email = "Email is invalid";
-    }
-
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Phone number is required";
-    }
-
-    if (!formData.password.trim()) {
-      newErrors.password = "Password is required";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters long";
-    }
-
-    if (!formData.confirmPassword.trim()) {
-      newErrors.confirmPassword = "confirm password is required";
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Password mismatch...";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const handleInputChange = () => {
+    clearErrors();
   };
 
   return (
     <div className="w-full flex-1 mt-8">
       <form
         className="mx-auto max-w-xs flex flex-col gap-4"
-        onSubmit={handleSubmit}
+        onSubmit={handleSubmit(onSubmit)}
       >
         <input
           className="w-full px-5 py-3 rounded-lg font-medium bg-gray-100 border border-gray-200 placeholder-gray-500 text-sm focus:outline-none focus:border-gray-400 focus:bg-white"
           type="text"
           placeholder="Enter your name"
-          name="username"
-          onChange={handleChange}
+          {...register("username")}
+          onChange={handleInputChange}
         />
         {errors.username && (
-          <span className="text-red-600">{errors.username}</span>
+          <span className="text-red-600">{errors.username.message}</span>
         )}
 
         <input
           className="w-full px-5 py-3 rounded-lg font-medium bg-gray-100 border border-gray-200 placeholder-gray-500 text-sm focus:outline-none focus:border-gray-400 focus:bg-white"
           type="email"
           placeholder="Enter your email"
-          name="email"
-          onChange={handleChange}
+          {...register("email")}
+          onChange={handleInputChange}
         />
-        {errors.email && <span className="text-red-600">{errors.email}</span>}
+        {errors.email && <span className="text-red-600">{errors.email.message}</span>}
 
         <input
           className="w-full px-5 py-3 rounded-lg font-medium bg-gray-100 border border-gray-200 placeholder-gray-500 text-sm focus:outline-none focus:border-gray-400 focus:bg-white"
           type="tel"
           placeholder="Enter your phone"
-          name="phone"
-          onChange={handleChange}
+          {...register("phone")}
+          onChange={handleInputChange}
         />
-        {errors.phone && <span className="text-red-600">{errors.phone}</span>}
+        {errors.phone && <span className="text-red-600">{errors.phone.message}</span>}
 
         <input
           className="w-full px-5 py-3 rounded-lg font-medium bg-gray-100 border border-gray-200 placeholder-gray-500 text-sm focus:outline-none focus:border-gray-400 focus:bg-white"
           type="password"
           placeholder="Password"
-          name="password"
-          onChange={handleChange}
+          {...register("password")}
+          onChange={handleInputChange}
         />
         {errors.password && (
-          <span className="text-red-600">{errors.password}</span>
+          <span className="text-red-600">{errors.password.message}</span>
         )}
 
         <input
           className="w-full px-5 py-3 rounded-lg font-medium bg-gray-100 border border-gray-200 placeholder-gray-500 text-sm focus:outline-none focus:border-gray-400 focus:bg-white"
           type="password"
           placeholder="Confirm Password"
-          name="confirmPassword"
-          onChange={handleChange}
+          {...register("confirmPassword")}
+          onChange={handleInputChange}
         />
         {errors.confirmPassword && (
-          <span className="text-red-600">{errors.confirmPassword}</span>
+          <span className="text-red-600">{errors.confirmPassword.message}</span>
         )}
 
         <button

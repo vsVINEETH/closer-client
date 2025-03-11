@@ -1,11 +1,11 @@
 import React from 'react'
-import Header from '@/components/user/Header';
-import Footer from '@/components/user/Footer';
+import Header from '@/components/reusables/Header';
+import Footer from '@/components/reusables/Footer';
 import SignupForm from '@/components/user/forms/SignupForm';
 const SignUp: React.FC = () => {
   return (
-    <div className="flex flex-col min-h-screen">
-    <Header/>
+    <div className="flex flex-col min-h-screen select-none caret-transparent">
+    <Header htmlFor='user'/>
     
      <div className="h-[100vh] items-center flex justify-center px-5 lg:px-0">
       <div className="max-w-screen-xl bg-white dark:bg-darkGray border dark:border-darkGray shadow sm:rounded-lg flex justify-center flex-1">
@@ -35,7 +35,7 @@ const SignUp: React.FC = () => {
       </div>
      </div>
 
-    <Footer/>
+    <Footer htmlFor='user'/>
   </div>
   )
 }

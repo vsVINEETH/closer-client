@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useSocket } from "@/context/SocketContext";
 import { Flame } from "lucide-react";
 
@@ -16,9 +16,9 @@ const Interest: React.FC<InterestProps> = ({currentUserId, targetUserId, current
   useEffect(() => {
     if (!socket) return;
 
-    // socket.on('newNotification', (data) => {
-    //   alert(`You have a new notification: ${data.message}`);
-    // });
+    socket.on('newNotification', (data) => {
+      alert(`You have a new notification: ${data.message}`);
+    });
 
     return () => {
       socket.off('newNotification');
@@ -27,7 +27,6 @@ const Interest: React.FC<InterestProps> = ({currentUserId, targetUserId, current
 
   const handleInterest = () => {
     if (!socket) return;
-
     socket.emit('notification', {
       user: targetUserId,
       interactor: currentUserId,

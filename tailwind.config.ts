@@ -19,6 +19,16 @@ const config: Config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
       },
+      animation: {
+        'mic-pulse': 'micRecordingAnimation 0.5s ease-in-out infinite',
+      },
+      keyframes: {
+        micRecordingAnimation: {
+          '0%': { transform: 'scale(1)', opacity: '1' },
+          '50%': { transform: 'scale(1.2)', opacity: '0.7' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+      },
     },
   },
   plugins: [],

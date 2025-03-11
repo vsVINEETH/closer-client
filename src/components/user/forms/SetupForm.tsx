@@ -5,25 +5,15 @@ import { useRouter } from 'next/navigation';
 import ReactCrop, { Crop,} from "react-image-crop";
 import { login } from '@/store/slices/userSlice';
 import { useDispatch } from 'react-redux';
-import useAxios from '@/hooks/useAxios/useAxios';
-import { errorToast, successToast, warnToast } from '@/utils/toasts/toats';
+import {  successToast } from '@/utils/toasts/toast';
 import { Plus } from 'lucide-react';
 import WebcamCapture from "@/components/Webcam";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { setupFormSchema, MAX_FILE_SIZE, ACCEPTED_IMAGE_TYPES } from '@/schemas/user/setupSchema';
+import { z } from "zod";
+import { useUserInteractions } from '@/hooks/crudHooks/user/useUserInteractions';
 
-interface FormData {
-  dob: string;
-  gender: string;
-  interest: string;
-  lookingFor: string;
-}
-
-interface Errors {
-  dob?: string;
-  gender?: string;
-  interest?: string;
-  lookingFor?: string;
-  images?: string;
-}
 
 interface PixelCrop {
   x: number;
@@ -41,12 +31,16 @@ interface CapturedImage {
   previewUrl: string;
 }
 
+type SetupFormData = z.infer<typeof setupFormSchema>;
 
 const SetupForm: React.FC = () => {
-  const [formData, setFormData] = useState<FormData>({ dob: '', gender: '', interest: '', lookingFor:''});
+  const { register, handleSubmit, setValue, setError, formState: { errors }, clearErrors} = useForm<SetupFormData>({ resolver: zodResolver(setupFormSchema),  
+    defaultValues: {
+    images: [],
+  },});
+
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [errors, setErrors] = useState<Errors>({});
 
   const [crop, setCrop] = useState<Crop | undefined>();
   const imageRef = useRef<HTMLImageElement | null>(null);
@@ -56,7 +50,8 @@ const SetupForm: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const toggleModal = () => setIsModalOpen((prev) => !prev);
 
-  const {handleRequest} = useAxios()
+
+  const {setupAccount} = useUserInteractions()
   const dispatch = useDispatch();
   const router = useRouter();
 
@@ -66,25 +61,38 @@ const SetupForm: React.FC = () => {
 
     setImages((prevImages) => [...prevImages, ...newFiles]);
     setImagePreviews((prevPreviews) => [...prevPreviews, ...newPreviews]);
-  },[capturedImages])
-
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const {name, value} = e.target;
-    setFormData((perv) => ({
-      ...perv,
-      [name]: value
-    }))
-
-    setErrors({})
-  }
+  },[capturedImages]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setImages(files) 
 
-    const preview = files.map((file) => URL.createObjectURL(file));
-    setImagePreviews(preview);
+    if (!e.target.files) return;
+
+    const newFiles = Array.from(e.target.files || []);
+
+    if (newFiles.length) {
+      setValue("images", [...images, ...newFiles], { shouldValidate: true });
+    }
+  
+    const validFiles = newFiles.filter((file) => 
+      file.size <= MAX_FILE_SIZE && ACCEPTED_IMAGE_TYPES.includes(file.type)
+    );
+  
+    if (validFiles.length < newFiles.length) {
+      setError("images", { message: "Invalid file type or size" });
+      return;
+    }
+  
+    const updatedImages = [...images, ...validFiles];
+  
+    if (updatedImages.length < 2) {
+      setError("images", { message: "Minimum 2 images are required" });
+    } else {
+      clearErrors("images");
+    }
+
+    setImages(updatedImages);
+    setImagePreviews(updatedImages.map((file) => URL.createObjectURL(file)));
+
   }
 
   const handleImageRemove = (index: number) => {
@@ -94,6 +102,12 @@ const SetupForm: React.FC = () => {
 
     setImages((prevImages) => prevImages.filter((_, i) => i !== index));
     setImagePreviews((prevPreviews) => prevPreviews.filter((_, i) => i !== index));
+  
+    setValue(
+      "images",
+       images.filter((_, i) => i !== index),
+      { shouldValidate: true }
+    );
   }
 
   const handleImageClick = (index: number) => {
@@ -155,37 +169,24 @@ const SetupForm: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const onSubmit = async (data: SetupFormData) => {
 
-    if(validation()){
       const email = localStorage.getItem('email');
-      const data = new FormData();
+      const formData = new FormData();
     
-      data.append('email', email || ''); 
-      data.append('dob', formData.dob);
-      data.append('gender', formData.gender);
-      data.append('interestedIn', formData.interest);
-      data.append('lookingFor', formData.lookingFor);
+      formData.append('email', email || ''); 
+      formData.append('dob', data.dob);
+      formData.append('gender', data.gender);
+      formData.append('interestedIn', data.interest);
+      formData.append('lookingFor', data.lookingFor);
       images.forEach((image: File) => {
-        data.append('images', image);
+        formData.append('images', image);
       });
 
-      const response = await handleRequest({
-        url:'/api/user/setup',
-        method:'POST',
-        data: data,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        }
-      })
+      const response = await setupAccount(formData);
 
-      if(response.error){
-        errorToast(response.error)
-      }
-     
       if(response.data){
-        const user = response.data;
+       const user = response.data;
         dispatch(
           login({ id:user.id, username:user.username, 
             email: user.email, image: user.image, phone: user.phone, 
@@ -196,76 +197,45 @@ const SetupForm: React.FC = () => {
         successToast('Account created successfully')
         router.push('/user/home');
       }
-    }
 
   }
 
-  const validation = (): boolean => {
-    
-    const newErrors: Errors = {};
-    const dob: string = formData.dob;
-    const currentYear: number = new Date().getFullYear();
-    const dobDateYear: number = new Date(dob).getFullYear();
-
-    if(!formData.dob.trim()){
-      newErrors.dob = "This field is required";
-    } else if ((currentYear - dobDateYear) < 18){
-      warnToast('Entry restricted you are under 18')
-      newErrors.dob = ''
-    }
-
-    if (!formData.gender) {
-      newErrors.gender = "This field is required";
-    }
-
-    if (!formData.interest) {
-      newErrors.interest = "This field is required";
-    }
-
-    if (!formData.lookingFor) {
-      newErrors.lookingFor = "This field is required";
-    }
-
-    if(images.length < 2){
-      newErrors.images = 'minimum 2 images are required'
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }
+  const handleInputChange = () => {
+    clearErrors();
+  };
 
   return (
     <div className="max-w-4xl bg-white dark:bg-darkGray dark:border-darkGray border shadow-md sm:rounded-lg flex flex-col lg:flex-row p-4 lg:p-8 w-full">
     <div className="lg:w-2/3 space-y-4">
       <h1 className="text-center text-2xl font-extrabold text-customPink dark:text-lightGray">Set up Account</h1>
       <form className="space-y-3"
-      onSubmit={handleSubmit}
+        onSubmit={handleSubmit(onSubmit)}
           >
           <div className="flex flex-col lg:flex-row space-x-0 lg:space-x-2 space-y-2 lg:space-y-0">
             <div className="flex-1 flex flex-col space-y-1">
-              <label className="text-gray-500 text-sm dark:text-lightGray">Birthday {errors.dob && <span className='text-red-500'>{ errors.dob }</span>}</label>
+              <label className="text-gray-500 text-sm dark:text-lightGray">Birthday {errors.dob && <span className='text-red-500'>{ errors.dob.message }</span>}</label>
                    
                 <input 
                   type="date" 
                   id="date" 
-                  name="dob" 
+                  {...register("dob")}
                   className="p-2 border border-gray-300 rounded-md w-full text-sm focus:outline-none focus:ring-2 focus:ring-customPink dark:focus:ring-lightGray"
-                  onChange={handleChange}
+                  onChange={handleInputChange}
                 />
             
             </div>
           </div>
 
           <div className="flex flex-col space-y-1">
-            <label className="text-gray-500 text-sm dark:text-lightGray">Gender{errors.gender && <span className='text-red-500'> { errors.gender }</span>}</label>
+            <label className="text-gray-500 text-sm dark:text-lightGray">Gender{errors.gender && <span className='text-red-500'> { errors.gender.message }</span>}</label>
             <div className="flex space-x-2 text-gray-500">
                 <label className="flex items-center p-2 border border-gray-300 rounded-md min-w-44 dark:text-lightGray">
                   <input 
                   type="radio" 
-                  name="gender" 
-                  value="men" 
+                  value="male" 
                   className="mr-2" 
-                  onChange={handleChange}
+                  {...register("gender")}
+                  onChange={handleInputChange}
                   />
                   Male
                 </label>
@@ -273,11 +243,11 @@ const SetupForm: React.FC = () => {
 
                 <label className="flex items-center p-2 border border-gray-300 rounded-md min-w-44 dark:text-lightGray">
                   <input 
-                  type="radio" 
-                  name="gender" 
+                  type="radio"  
                   value="female" 
+                  {...register("gender")}
                   className="mr-2" 
-                  onChange={handleChange}
+                  onChange={handleInputChange}
                   />
                   Female
                 </label>
@@ -285,10 +255,10 @@ const SetupForm: React.FC = () => {
                 <label className="flex items-center p-2 border border-gray-300 rounded-md min-w-44 dark:text-lightGray">
                   <input 
                   type="radio" 
-                  name="gender" 
-                  value="other" 
+                  {...register("gender")}
+                  value="others" 
                   className="mr-2" 
-                  onChange={handleChange}
+                  onChange={handleInputChange}
                   />
                   Other
                 </label>
@@ -298,15 +268,15 @@ const SetupForm: React.FC = () => {
           </div>
 
           <div className="flex flex-col space-y-1">
-            <label className="text-gray-500 text-sm dark:text-lightGray">Interested in {errors.interest && <span className='text-red-500'>{ errors.interest }</span>}</label>
+            <label className="text-gray-500 text-sm dark:text-lightGray">Interested in {errors.interest && <span className='text-red-500'>{ errors.interest.message }</span>}</label>
             <div className="flex space-x-2 text-gray-500">
                 <label className="flex items-center p-2 border border-gray-300 rounded-md min-w-44 dark:text-lightGray">
                   <input 
                   type="radio" 
-                  name="interest" 
-                  value="men" 
+                  {...register("interest")}
+                  value="male" 
                   className="mr-2"
-                  onChange={handleChange} 
+                  onChange={handleInputChange} 
                   />
                   Male
                 </label>
@@ -315,10 +285,10 @@ const SetupForm: React.FC = () => {
                 <label className="flex items-center p-2 border border-gray-300 rounded-md min-w-44 dark:text-lightGray">
                   <input 
                   type="radio" 
-                  name="interest" 
+                  {...register("interest")}
                   value="female" 
                   className="mr-2"
-                  onChange={handleChange} 
+                  onChange={handleInputChange} 
                   />
                   Female
                 </label>
@@ -326,10 +296,10 @@ const SetupForm: React.FC = () => {
                 <label className="flex items-center p-2 border border-gray-300 rounded-md min-w-44 dark:text-lightGray">
                   <input 
                   type="radio" 
-                  name="interest" 
-                  value="other" 
+                  {...register("interest")}
+                  value="others" 
                   className="mr-2" 
-                  onChange={handleChange}
+                  onChange={handleInputChange}
                   />
                   Other
                 </label>
@@ -338,10 +308,10 @@ const SetupForm: React.FC = () => {
           </div>
 
           <div className="flex flex-col space-y-1">
-            <label htmlFor="lookingFor" className="text-gray-500 text-sm dark:text-lightGray">Looking for {errors.lookingFor && <span className='text-red-500'>{ errors.lookingFor }</span>}</label>
+            <label htmlFor="lookingFor" className="text-gray-500 text-sm dark:text-lightGray">Looking for {errors.lookingFor && <span className='text-red-500'>{ errors.lookingFor.message }</span>}</label>
               <select 
               id="lookingFor"
-              name='lookingFor'
+              {...register("lookingFor")}
               defaultValue=''
               className="p-2 
               border 
@@ -353,7 +323,7 @@ const SetupForm: React.FC = () => {
               focus:ring-customPink
               dark:focus:ring-lightGray
               "
-              onChange={handleChange}
+              onChange={handleInputChange}
               >
                <option value="" disabled hidden>Select an option</option>
                 <option value="short-term">Short-term relationship</option>
@@ -377,65 +347,64 @@ const SetupForm: React.FC = () => {
     </div>
 
     {/* Right side profile photo uploader */}
-    <div className="mt-4 lg:mt-0 lg:ml-3 lg:w-1/3 flex items-center justify-center lg:justify-start flex-col space-y-3 p-3 bg-white rounded-lg dark:bg-darkGray">
-      <h2 className="font-medium text-gray-700 text-base dark:text-lightGray">Profile photos</h2>
-      {errors.images && <span className='text-red-500'>{errors.images}</span>}
-      
-      <div className="flex flex-col items-center justify-center">
-  <div className="flex flex-wrap gap-2 mt-4 justify-center">
-    {imagePreviews.map((preview, index) => (
-      <div
-        key={index}
-        className="relative"
-        onDoubleClick={() => handleImageClick(index)}
-      >
-        <img
-          src={preview}
-          alt={`Preview ${index}`}
-          className="w-16 h-16 object-cover rounded-md"
-        />
-        <button
-          className="absolute top-0 right-0 bg-customPink text-white text-center rounded-full h-5 w-5 hover:bg-red-600 flex items-center justify-center"
-          onClick={() => handleImageRemove(index)}
+      <div className="mt-4 lg:mt-0 lg:ml-3 lg:w-1/3 flex items-center justify-center lg:justify-start flex-col space-y-3 p-3 bg-white rounded-lg dark:bg-darkGray">
+        <h2 className="font-medium text-gray-700 text-base dark:text-lightGray">Profile photos</h2>
+        {errors.images && <span className='text-red-500'>{errors.images.message}</span>}
+        
+        <div className="flex flex-col items-center justify-center">
+      <div className="flex flex-wrap gap-2 mt-4 justify-center">
+      {imagePreviews.map((preview, index) => (
+        <div
+          key={index}
+          className="relative"
+          onDoubleClick={() => handleImageClick(index)}
         >
-          <span>x</span>
-        </button>
-      </div>
-    ))}
-    <label
-      htmlFor="file-upload"
-      className="w-16 h-16 bg-gray-300 rounded-md flex items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-400 transition-all"
-    >
-      <Plus />
-    </label>
-    <input
-      id="file-upload"
-      name="image"
-      type="file"
-      multiple
-      className="hidden"
-      onChange={handleImageUpload}
-    />
-  </div>
-
-  <p className="text-xs text-gray-500 text-center dark:text-gray-400 mt-4">
-    Upload 2 photos to start. Add 4 or more to make your profile stand out.
-    <br />
-    Double click to resize your image.
-  </p>
-
-  {/* Center the Take a Photo button */}
-  <div className="mt-4 flex justify-center w-full">
-    <button
-      onClick={toggleModal}
-      className="bg-customPink text-white px-4 py-2 rounded-lg hover:bg-red-500"
-    >
-      Take a photo
-    </button>
-  </div>
-</div>
-
+          <img
+            src={preview}
+            alt={`Preview ${index}`}
+            className="w-16 h-16 object-cover rounded-md"
+          />
+          <button
+            className="absolute top-0 right-0 bg-customPink text-white text-center rounded-full h-5 w-5 hover:bg-red-600 flex items-center justify-center"
+            onClick={() => handleImageRemove(index)}
+          >
+            <span>x</span>
+          </button>
+        </div>
+      ))}
+      <label
+        htmlFor="file-upload"
+        className="w-16 h-16 bg-gray-300 rounded-md flex items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-400 transition-all"
+      >
+        <Plus />
+      </label>
+      <input
+        id="file-upload"
+        name="image"
+        type="file"
+        multiple
+        className="hidden"
+        onChange={handleImageUpload}
+      />
     </div>
+
+    <p className="text-xs text-gray-500 text-center dark:text-gray-400 mt-4">
+      Upload 2 photos to start. Add 4 or more to make your profile stand out.
+      <br />
+      Double click to resize your image.
+    </p>
+
+    {/* Center the Take a Photo button */}
+    <div className="mt-4 flex justify-center w-full">
+      <button
+        onClick={toggleModal}
+        className="bg-customPink text-white px-4 py-2 rounded-lg hover:bg-red-500"
+      >
+        Take a photo
+      </button>
+    </div>
+  </div>
+     </div>
 
     {currentImageIndex !== null && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">

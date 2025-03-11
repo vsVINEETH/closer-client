@@ -1,9 +1,13 @@
 'use client'
 import React, {useState, useEffect, useRef} from 'react';
 import ReactCrop, { Crop,} from "react-image-crop";
-import { ChevronsUpDown, SlidersHorizontal, UserPlus, Plus, Search, Pencil, Rewind, Delete } from 'lucide-react';
-import useAxios from '@/hooks/useAxios/useAxios';
-import { errorToast, successToast } from '@/utils/toasts/toats';
+import { SlidersHorizontal, Plus, Search, Pencil } from 'lucide-react';
+import { successToast } from '@/utils/toasts/toast';
+import { createConfirm, deleteConfirm, editConfirm, listUnlistConfirm } from '@/utils/sweet_alert/sweetAlert';
+import { useFetch } from '@/hooks/fetchHooks/useAdminFetch';
+import { useAdvertisementCrud } from '@/hooks/crudHooks/admin/useAdvertisementCrud';
+import NoContent from '../reusables/NoContent';
+import DataTable from '../reusables/Table';
 
 interface AdvertisementData {
     id: string,
@@ -43,14 +47,34 @@ interface PixelCrop {
     height: number;
   }
   
-  interface CustomCrop extends Crop {
-    aspect?: number;
-  }
-  
+interface CustomCrop extends Crop {
+  aspect?: number;
+}
+
+
+const columns = [
+  { key: "id", label: "ID", sortable: true },
+  { key: "title", label: "Title", sortable: true },
+  { key: "subtitle", label: "Subtitle", sortable: true },
+  {key: 'image',
+   label: 'Image',
+   sortable: false,
+ //  render:(item: ContentData) => item.image || ''
+  },
+
+  { 
+    key: "isListed", 
+    label: "Status", 
+    sortable: false, 
+    render: (item: AdvertisementData) => (item.isListed ? "Listed" : "Unlisted") 
+  },
+  { key: "createdAt", label: "Created At", sortable: true },
+];
+
 
 const AdvertisementTable: React.FC = () => {
     const [advertisementData, setAdvertisementData] = useState<AdvertisementData[]>([]);
-    const [createModal, setCreateModal] = useState<Boolean>(false);
+    const [createModal, setCreateModal] = useState<boolean>(false);
     const [createFormData, setCreateFormData] = useState<createFormData>({title: '', subtitle:'', content:'', image:[]});
     const [images, setImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -61,145 +85,137 @@ const AdvertisementTable: React.FC = () => {
     const [errors, setErrors] = useState<Errors>({});
 
     const [searchValue, setSearchValue] = useState<string>('');
-    const [sortConfig, setSortConfig] = useState<{ column: keyof AdvertisementData; direction: 'asc' | 'desc' } | null>(null);
-
-    const [filterModal, setFilterModal] = useState<Boolean>(false);
+    const [sortConfig, setSortConfig] = useState<{ column: keyof AdvertisementData; direction: 'desc' | 'asc' } | null>(null);
     const [filterOption, setFilterOption] = useState<FilterOption>({startDate: '', endDate: '', status: undefined});
-    const [filterData, setFilterData] = useState<AdvertisementData[]>([]);
-    const [filterStatus, setFilterStatus] = useState<Boolean>(false);
-
+   
+    const [filterModal, setFilterModal] = useState<boolean>(false);
+    const [filterStatus, setFilterStatus] = useState<boolean>(false);
+    const [totalPage, setTotal] = useState<number>(0)
     const [currentPage, setCurrentPage] = useState<number>(1);
-    const [pageSize, setPageSize] = useState<number>(2);
+    const [pageSize] = useState<number>(2);
 
     const [editModal, setEditModal] = useState<boolean>(false);
     const [editFormData, setEditFormData] = useState<AdvertisementData | null>(null);
 
     const [result, setResult] = useState<AdvertisementData[]>([]);
-    const {handleRequest} = useAxios();
+    const {getAdvertisementData} = useFetch();
+    const {createAd, controllAdListing, editAd, deleteAd} = useAdvertisementCrud()
+
+    const searchFilterSortPagination = {
+      search: searchValue || '',
+      startDate: filterOption.startDate || '',
+      endDate: filterOption.endDate || '',
+      status: filterOption.status ,
+      sortColumn: sortConfig?.column || 'createdAt',
+      sortDirection: sortConfig?.direction || 'desc',
+      page: currentPage,
+      pageSize: pageSize, 
+    }
 
     useEffect(() => {
         fetchData();
-    },[]);
-
-    useEffect(() => {
-       setResult(
-          searchValue ? filterData.filter(content =>
-            content.title?.toLowerCase().includes(searchValue.toLowerCase()) ||
-            content.subtitle?.toLocaleLowerCase().includes(searchValue.toLowerCase()) ||
-            content.content?.toLocaleLowerCase().includes(searchValue.toLowerCase())
-          ): filterData
-        )
-    },[searchValue, filterData]);
-
+        
+    },[searchValue, filterOption, currentPage, pageSize, sortConfig]);
 
     const fetchData = async () => {
         try {
-            const response = await handleRequest({
-                url:'/api/admin/advertisement',
-                method:'GET'
-            })
-            if(response.error){
-                errorToast(response.error)
-            }
+            const response = await getAdvertisementData(searchFilterSortPagination);
+
             if(response.data){
                 const data = response.data;
-                console.log(data);
-                setAdvertisementData(data);
-                setFilterData(data);
-                setResult(data);
+                setAdvertisementData(data.advertisement);
+                setResult(data.advertisement);
+                setTotal(data.total);
             }
             
         } catch (error) {
-            errorToast('something happen')
+            console.error(error);
         }
-    }
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const {name, value} = e.target;
-        setCreateFormData((prev) => ({
-            ...prev,
-            [name]: value
-        }))
-        setErrors({})
     }
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if(validation()){
-            const data = new FormData();
-            data.append('title', createFormData.title);
-            data.append('subtitle', createFormData.subtitle);
-            data.append('content', createFormData.content);
+
+            const confirm = await createConfirm();
+            if(!confirm){return};
+
+            const advertisementData = new FormData();
+            advertisementData.append('title', createFormData.title);
+            advertisementData.append('subtitle', createFormData.subtitle);
+            advertisementData.append('content', createFormData.content);
             images.forEach((image: File) => {
-                data.append('images', image); // 'images' is the field name you expect in the backend
+              advertisementData.append('images', image); // 'images' is the field name you expect in the backend
             });
 
-
-            const response = await handleRequest({
-                url: '/api/admin/advertisement',
-                method:'POST',
-                data: data,
-                headers:{
-                    'Content-Type': 'multipart/form-data', 
-                }
-            })
-
-            if(response.error){
-                errorToast(response.error)
-            }
-
+            const response = await createAd(advertisementData, searchFilterSortPagination);
+            
             if(response.data){
-                setResult(response.data.data)
+              console.log(response.data)
+                setAdvertisementData(response.data.data.advertisement)
+                setResult(response.data.data.advertisement);
+                setTotal(response.data.data.total)
                 setCreateModal(false);
                 setImagePreviews([])
                 successToast('Successfully created')
-                
             }
             
         }
 
+    }
+
+    const handleListing = async (advertisementId: string, index: number) => {
+      const confirm = await listUnlistConfirm(!advertisementData[index].isListed);
+      if(!confirm) { return }
+      const response = await controllAdListing(advertisementId);
+      if(response.data){
+          setAdvertisementData(response.data)
+          setResult(response.data);
+      }
+
+    }
+
+    const handleDelete = async (advertisementId: string) => {
+      const confirm = await deleteConfirm();
+     
+        if(!confirm){return}
+        const response = await deleteAd(advertisementId)
+
+        if(response.data){
+            setAdvertisementData(response.data)
+            setResult(response.data)
+            setTotal(response.data.total)
+        }
+    }
+
+    const handleEditSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      const confirm = await editConfirm();
+      if(!confirm){ return }
+
+      if (editValidation()) {
+       const response = await editAd(editFormData ? editFormData : {});
+
+      if(response.data){
+          setEditModal(false)
+          setResult(response.data);
+      }
+      }
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const {name, value} = e.target;
+      setCreateFormData((prev) => ({
+          ...prev,
+          [name]: value
+      }))
+      setErrors({})
     }
 
     const handleCancel = () => {
         setCreateModal(false);
         setErrors({});
         setImagePreviews([])
-    }
-
-    const handleListing = async (id: string) => {
-        const response = await handleRequest({
-            url:'/api/admin/list_advertisement',
-            method:'PATCH',
-            data:{
-                id: id
-            }
-        })
-
-        if(response.error){
-            errorToast(response.error)
-        }
-        if(response.data){
-            setResult(response.data);
-        }
-
-    }
-
-    const handleDelete = async (id: string) => {
-        const response = await handleRequest({
-            url:'/api/admin/advertisement',
-            method:'DELETE',
-            data:{
-                id:id
-            }
-        });
-
-        if(response.error){
-            errorToast(response.error)
-        }
-
-        if(response.data){
-            setResult(response.data)
-        }
     }
 
     const validation = () => {
@@ -247,40 +263,15 @@ const AdvertisementTable: React.FC = () => {
     }
 
     const handleSort = (column: keyof AdvertisementData) => {
-    let direction: 'asc' | 'desc' = 'asc';
-
-    // Toggle direction if the same column is clicked again
-    if (sortConfig && sortConfig.column === column && sortConfig.direction === 'asc') {
-        direction = 'desc';
-    }
-
-    setSortConfig({ column, direction });
-
-    // Sort userData based on column and direction
-    const sortedData = [...filterData].sort((a, b) => {
-        let aValue: any = a[column];
-        let bValue: any = b[column];
-
-        // Handle date sorting specifically for the createdAt field
-        if (column === 'createdAt') {
-            aValue = new Date(aValue).getTime();
-            bValue = new Date(bValue).getTime();
-        }
-
-        // Sort in ascending or descending order
-        if (aValue < bValue) {
-            return direction === 'asc' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-            return direction === 'asc' ? 1 : -1;
-        }
-        return 0;
-    });
-
-    setFilterData(sortedData);
+      setSortConfig((prev) => {
+          const isSameColumn = prev?.column === column;
+          return {
+              column,
+              direction: isSameColumn && prev?.direction === 'asc' ? 'desc' : 'asc',
+          };
+      });
     };
 
-//filter
     const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
 
         const {name, value} = e.target
@@ -296,38 +287,13 @@ const AdvertisementTable: React.FC = () => {
 
         e.preventDefault();
         
-        const { startDate, endDate, status } = filterOption;
+        const { startDate, endDate } = filterOption;
         const start = startDate ? new Date(startDate) : null;
         const end = endDate ? new Date(endDate) : null;
         
         if (!validateDateRange(start, end)) {
             return;
         }
-    
-        const filtered = advertisementData.filter((ad) => {
-            // Clone dates to avoid mutation
-            const contentDate = new Date(ad.createdAt);
-            contentDate.setHours(0, 0, 0, 0);
-    
-            const startClone = start ? new Date(start) : null;
-            const endClone = end ? new Date(end) : null;
-    
-            if (startClone) startClone.setHours(0, 0, 0, 0);
-            if (endClone) endClone.setHours(0, 0, 0, 0);
-    
-            // Check if employeeDate is within the date range
-            const isWithinDateRange = 
-                (!startClone || contentDate >= startClone) &&
-                (!endClone || contentDate <= endClone);
-    
-            // Check if employee status matches
-            const isStatusMatch = status === undefined || ad.isListed === status;
-    
-            return isWithinDateRange && isStatusMatch;
-        });
-    
-        setFilterData(filtered);
-        setResult(filtered);
         setFilterModal(false);
         setFilterStatus(true);
     };
@@ -358,136 +324,110 @@ const AdvertisementTable: React.FC = () => {
     };
     
     const removeFilter = () => {
-        setFilterStatus(false);
-        setFilterData(advertisementData);
+        setFilterOption({startDate: '', endDate: '', status: undefined})
+        setFilterStatus(false);    
     }
 
 //pagination
-
-    const paginatedData = result?.slice(
-        (currentPage - 1) * pageSize,
-        currentPage * pageSize
-    );
-
     const handleNext = () => {
-        if (currentPage < Math.ceil(result.length / pageSize)) {
-            setCurrentPage(currentPage + 1);
+        if (currentPage < Math.ceil(totalPage / pageSize)) {
+          setCurrentPage((prevPage) => prevPage + 1);
         }
     };
 
     const handlePrevious = () => {
         if (currentPage > 1) {
-            setCurrentPage(currentPage - 1);
+          setCurrentPage((prevPage) => prevPage - 1);
         }
     };
-
 
     //img
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
-        setImages(files) 
-        setErrors({})
-    
-        const preview = files.map((file) => URL.createObjectURL(file));
-        setImagePreviews(preview);
-      }
+      const files = Array.from(e.target.files || []);
+      setImages(files) 
+      setErrors({})
+  
+      const preview = files.map((file) => URL.createObjectURL(file));
+      setImagePreviews(preview);
+    }
 
-      const handleImageRemove = (index: number) => {
-        if(imagePreviews.length === 0){
-          setCurrentImageIndex(null);
-        } 
-    
-        setImages((prevImages) => prevImages.filter((_, i) => i !== index));
-        setImagePreviews((prevPreviews) => prevPreviews.filter((_, i) => i !== index));
-        setErrors({})
-      }
+    const handleImageRemove = (index: number) => {
+      if(imagePreviews.length === 0){
+        setCurrentImageIndex(null);
+      } 
+  
+      setImages((prevImages) => prevImages.filter((_, i) => i !== index));
+      setImagePreviews((prevPreviews) => prevPreviews.filter((_, i) => i !== index));
+      setErrors({})
+    }
 
-      const handleImageClick = (index: number) => {
-        setCurrentImageIndex(index);
-        setCrop({ aspect: 1 / 1 }  as CustomCrop); // Set square aspect ratio, adjust as needed
-      };
-
-      const handleCropComplete = (crop: PixelCrop) => {
-        if (imageRef.current && crop.width && crop.height) {
-          const canvas = document.createElement("canvas");
-          const scaleX = imageRef.current.naturalWidth / imageRef.current.width;
-          const scaleY = imageRef.current.naturalHeight / imageRef.current.height;
-          canvas.width = crop.width;
-          canvas.height = crop.height;
-          const ctx = canvas.getContext("2d");
-    
-          if (ctx) {
-            ctx.drawImage(
-              imageRef.current,
-              crop.x * scaleX,
-              crop.y * scaleY,
-              crop.width * scaleX,
-              crop.height * scaleY,
-              0,
-              0,
-              crop.width,
-              crop.height
-            );
-    
-            // Convert cropped image to a new preview URL
-            canvas.toBlob((blob) => {
-              if (blob && currentImageIndex !== null) {
-                const newImageUrl = URL.createObjectURL(blob);
-    
-                setImagePreviews((prevPreviews) => {
-                  const updatedPreviews = [...prevPreviews];
-                  updatedPreviews[currentImageIndex] = newImageUrl;
-                  return updatedPreviews;
-                });
-    
-               // Convert the blob to a new File object to replace the original image file
-                const newFile = new File([blob], images[currentImageIndex].name, {
-                  type: images[currentImageIndex].type,
-                  lastModified: Date.now(),
-                });
-    
-                    // Update the images array with the new cropped file
-                setImages((prevImages) => {
-                  const updatedImages = [...prevImages];
-                  updatedImages[currentImageIndex] = newFile;
-                  return updatedImages;
-                });
-    
-                setCurrentImageIndex(null); // Close crop UI
-              }
-            });
-          }
-        }
-      };
-
-      //edit
-      const handleEditClick = (data: AdvertisementData) => {
-        setEditFormData(data);
-        setEditModal(true);
+    const handleImageClick = (index: number) => {
+      setCurrentImageIndex(index);
+      setCrop({ aspect: 1 / 1 }  as CustomCrop); // Set square aspect ratio, adjust as needed
     };
 
-    const handleEditSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleCropComplete = (crop: PixelCrop) => {
+      if (imageRef.current && crop.width && crop.height) {
+        const canvas = document.createElement("canvas");
+        const scaleX = imageRef.current.naturalWidth / imageRef.current.width;
+        const scaleY = imageRef.current.naturalHeight / imageRef.current.height;
+        canvas.width = crop.width;
+        canvas.height = crop.height;
+        const ctx = canvas.getContext("2d");
+  
+        if (ctx) {
+          ctx.drawImage(
+            imageRef.current,
+            crop.x * scaleX,
+            crop.y * scaleY,
+            crop.width * scaleX,
+            crop.height * scaleY,
+            0,
+            0,
+            crop.width,
+            crop.height
+          );
+  
+          // Convert cropped image to a new preview URL
+          canvas.toBlob((blob) => {
+            if (blob && currentImageIndex !== null) {
+              const newImageUrl = URL.createObjectURL(blob);
+  
+              setImagePreviews((prevPreviews) => {
+                const updatedPreviews = [...prevPreviews];
+                updatedPreviews[currentImageIndex] = newImageUrl;
+                return updatedPreviews;
+              });
+  
+              // Convert the blob to a new File object to replace the original image file
+              const newFile = new File([blob], images[currentImageIndex].name, {
+                type: images[currentImageIndex].type,
+                lastModified: Date.now(),
+              });
+  
+                  // Update the images array with the new cropped file
+              setImages((prevImages) => {
+                const updatedImages = [...prevImages];
+                updatedImages[currentImageIndex] = newFile;
+                return updatedImages;
+              });
+  
+              setCurrentImageIndex(null); // Close crop UI
+            }
+          });
+        }
+      }
+    };
 
-        if (editValidation()) {
-         const response = await handleRequest({
-            url:'/api/admin/advertisement',
-            method:'PATCH',
-            data: editFormData || {},
-        });
+    const handleEditClick = (data: AdvertisementData) => {
+      setEditFormData(data);
+      setEditModal(true);
+    };
 
-        if(response.error){
-            errorToast(response.error)
-        }
-        if(response.data){
-            setEditModal(false)
-            setResult(response.data);
-        }
-        }
-      };
+
 
   return (
-
+   
     <div className="relative flex flex-col w-full h-full text-gray-700 bg-white dark:bg-nightBlack dark:text-lightGray  bg-clip-border ">
         {/* head */}
         <div className="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white dark:bg-nightBlack dark:text-lightGray rounded-none bg-clip-border">
@@ -500,27 +440,20 @@ const AdvertisementTable: React.FC = () => {
 
             </div>
             <div className="flex flex-col gap-2 shrink-0 sm:flex-row">
-          { !filterStatus ? 
+
              <button
                 className="select-none rounded-lg border flex gap-1 dark:text-lightGray dark:border-lightGray  border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-                type="button" onClick={() => setFilterModal(true)}>
+                type="button" onClick={ !filterStatus ? () => setFilterModal(true) : removeFilter}>
                  <SlidersHorizontal size={10}/>
-                Filter
+                 { !filterStatus ?  "Filter" : 'Remove'}
              </button>
-            :
-            <button
-            className="select-none rounded-lg border flex gap-1 dark:text-lightGray dark:border-lightGray  border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-            type="button" onClick={removeFilter}>
-             <SlidersHorizontal size={10}/>
-            Remove
-           </button>
-         }
+    
             <button
                 className="flex select-none items-center gap-3 rounded-lg dark:text-darkGray dark:bg-lightGray bg-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-white shadow-md shadow-gray-900/10 transition-all hover:shadow-lg hover:shadow-gray-900/20 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
                 type="button" onClick={() => setCreateModal(true)} >
                
                 <Pencil size={15}/>
-                Add Content
+                Add Advertisement
             </button>
             </div>
         </div>
@@ -534,7 +467,7 @@ const AdvertisementTable: React.FC = () => {
                     <Search size={18} />
                 </div>
                     <input
-                        className="peer h-full w-full rounded-[7px] border border-blue-gray-200 dark:border-gray-600 border-t-transparent bg-transparent dark:bg-gray-800 px-3 py-2.5 !pr-9 font-sans text-sm font-normal text-blue-gray-700 dark:text-gray-200 outline outline-0 transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 dark:placeholder-shown:border-gray-600 dark:placeholder-shown:border-t-gray-600 focus:border-2 focus:border-gray-900 dark:focus:border-gray-400 focus:border-t-transparent dark:focus:border-t-transparent focus:outline-0 disabled:border-0 disabled:bg-blue-gray-50 dark:disabled:bg-gray-700"
+                        className="peer h-full w-full rounded-[7px] border border-blue-gray-200 dark:border-gray-600 border-t-transparent bg-transparent dark:bg-darkGray px-3 py-2.5 !pr-9 font-sans text-sm font-normal text-blue-gray-700 dark:text-gray-200 outline outline-0 transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 dark:placeholder-shown:border-gray-600 dark:placeholder-shown:border-t-gray-600 focus:border-2 focus:border-gray-900 dark:focus:border-gray-400 focus:border-t-transparent dark:focus:border-t-transparent focus:outline-0 disabled:border-0 disabled:bg-blue-gray-50 dark:disabled:bg-gray-700"
                         placeholder=" "
                         onChange={(e) => setSearchValue(e.target.value)}
                     />
@@ -548,473 +481,382 @@ const AdvertisementTable: React.FC = () => {
             </div>
         </div>
         </div>
-
         {/* table */}
-        <div className="p-6 px-0 overflow-scroll overflow-x-hidden overflow-y-hidden">
-        <table className="w-full mt-4 text-left table-auto min-w-max">
-            <thead className='text-center'>
-            <tr >
-            <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                    ID
-                    <ChevronsUpDown size={13} onClick={() => handleSort('id')}/>
-                </p>
-                </th>
-                <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                    Title
-                    <ChevronsUpDown size={13} onClick={() => handleSort('title')}/>
-                </p>
-                </th>
-                <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                    Subtitle
-                    <ChevronsUpDown size={13} onClick={() => handleSort('subtitle')}/>
-                </p>
-                </th>
-                
-                <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                        Details
-                    <ChevronsUpDown size={13}/>
-                </p>
-                </th>
-                <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                     Images
-                </p>
-                </th>
-                <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                     Status
-                </p>
-                </th>
-                <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                    Created At
-                    <ChevronsUpDown size={13} onClick={() => handleSort('createdAt')}/>
-                </p>
-                </th>
-                <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                  <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                    Action
-                </p>
-                </th>
-            </tr>
+
+      {advertisementData.length || result.length ? (
+        <>
+        <DataTable 
+          columns={columns} 
+          data={result} 
+          onListed={handleListing} 
+          onEdit={handleEditClick} 
+          onSort={handleSort} 
+          onDelete={handleDelete}
+          currentPage={currentPage}
+          totalPage={totalPage}
+          pageSize={pageSize}
+          handleNext={handleNext}
+          handlePrevious={handlePrevious}
+          />
+      
+        {/* <div className="p-6 px-0 overflow-x-auto">
+          <table className="w-full mt-4 text-left border-collapse rounded-lg shadow-md overflow-hidden">
+            <thead className="bg-gray-100 dark:bg-darkGray text-gray-800 dark:text-gray-300 text-sm  tracking-wider">
+              <tr>
+                {["ID", "Title", "Subtitle", "Details", "Images", "Status", "Created At", "Action"].map((header, index) => (
+                  <th
+                    key={index}
+                    className="p-4 border-b border-gray-300 dark:border-gray-700 text-center cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+                    onClick={() =>
+                      header !== "Images" && header !== "Status" && header !== "Action"
+                        ? handleSort(columnMap[header])
+                        : null
+                    }
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      {header}
+                      {["ID", "Title", "Subtitle", "Details", "Created At"].includes(header) && <ChevronsUpDown size={14} />}
+                    </div>
+                  </th>
+                ))}
+              </tr>
             </thead>
 
-            <tbody>
-
-            {paginatedData?.map((value, index) => {
-            return(
-            <tr key={index}>
-            <td className="p-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex flex-col">
-                    <p
-                        className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900 opacity-70">
-                        {value.id.split('').slice(7,16).join("")}
-                    </p>
-                    </div>
-                </div>
-                </td>
-                <td className="p-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex flex-col">
-                    <p className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                        {value.title}
-                    </p>
-
-                    </div>
-                </div>
-                </td>
-
-                <td className="p-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex flex-col">
-                    <p className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                        {value.subtitle}
-                    </p>
-
-                    </div>
-                </div>
-                </td>
-                <td className="p-4">
-                 <div className="flex items-center gap-3">
-                    <div className="flex flex-col">
-                    <p className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                        {value.content}
-                    </p>
-
-                    </div>
-                 </div>
-                </td>
-                <td className="p-4">
-                 <div className="flex items-center gap-3">
-                    <div className="flex flex-col">
-                    <p className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                        <img src={value.image} alt="" className='w-10 h-10'/>
-                    </p>
-
-                    </div>
-                 </div>
-                </td>
-                <td className="p-4">
-                <div className="w-max">
-                    <div
-                    className="relative grid items-center px-2 py-1 font-sans text-xs font-bold uppercase rounded-md select-none whitespace-nowrap bg-blue-gray-500/20 text-blue-gray-900">
-                        {!value.isListed ?
-                         <span className="">Unlisted</span>
-                         :
-                         <span className="">Listed</span>
-                        }
-                    
-                    </div>
-                </div>
-                </td>
-                <td className="p-4">
-                <p className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                    {value.createdAt}
-                </p>
-                </td>
-                <td className="p-4">
-                <button
-                    className="relative h-10 max-h-[40px] w-24 max-w-[70px] select-none rounded-lg text-center align-middle font-sans text-xs font-medium uppercase text-gray-900 transition-all hover:bg-gray-900/10 active:bg-gray-900/20 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none border dark:border-lightGray dark:bg-lightGray dark:text-darkGray "
-                    type="button"
-                    onClick={() => handleListing(value.id)}
+            <tbody className="text-gray-800  dark:text-gray-200 text-sm">
+              {result?.map((value: any, index: number) => (
+                <tr key={index} className="border-b border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-darkGray transition-all">
+                  <td className="p-4 text-center font-medium">{value.id.slice(7, 16)}</td>
+                  <td className="p-4 text-center truncate max-w-[150px]">{value.title}</td>
+                  <td className="p-4 text-center truncate max-w-[150px]">{value.subtitle}</td>
+                  <td className="p-4 text-center truncate max-w-[200px]">{value.content}</td>
+                  <td className="p-4 text-center">
+                    <img src={value.image} alt="" className="w-12 h-12 rounded-lg shadow-md object-cover" />
+                  </td>
+                  <td className="p-4 text-center">
+                    <span
+                      className={`px-3 py-1 text-xs font-semibold rounded-md uppercase ${
+                        value.isListed
+                          ? "bg-green-500/20 text-green-600 dark:bg-green-400/20 dark:text-green-300"
+                          : "bg-red-500/20 text-red-600 dark:bg-red-400/20 dark:text-red-300"
+                      }`}
                     >
-                        {!value.isListed ? 
-                        <span className="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2 dark:text-darkGray">
-                            List
-                        </span> 
-                        :
-                        <span className="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2 dark:text-darkGray">
-                            Unlist
-                        </span>
-                        }
-                </button>
-                <button
-                    className="relative ml-2 h-10 max-h-[40px] w-24 max-w-[70px] select-none rounded-lg text-center align-middle font-sans text-xs font-medium uppercase text-gray-900 transition-all hover:bg-gray-900/10 active:bg-gray-900/20 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none border dark:border-lightGray dark:bg-lightGray dark:text-darkGray "
-                    type="button"
-                    onClick={() => handleDelete(value.id)}
+                      {value.isListed ? "Listed" : "Unlisted"}
+                    </span>
+                  </td>
+                  <td className="p-4 text-center">{value.createdAt}</td>
+                  <td className="p-4 flex justify-center gap-3">
+                    <button
+                      className="px-4 py-1.5 text-xs font-semibold uppercase border rounded-lg transition-all dark:border-gray-500 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      onClick={() => handleListing(value.id, index)}
                     >
-                        <span className="absolute  transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2 dark:text-darkGray">
-                            Delete
-                        </span>
-                </button>
-                <button className='ml-3'
-                onClick={() =>handleEditClick(value)}
-                >
-                    <Pencil size={18}/>
-                </button>
-             </td>
-            </tr>
-            )
-            })}
+                      {value.isListed ? "Unlist" : "List"}
+                    </button>
+
+                    <button
+                      className="px-4 py-1.5 text-xs font-semibold uppercase border rounded-lg transition-all bg-red-500/20 text-red-600 dark:bg-red-400/2 dark:text-red-400 hover:bg-red-500/30 dark:hover:bg-red-500/40"
+                      onClick={() => handleDelete(value.id)}
+                    >
+                      Delete
+                    </button>
+
+                    <button
+                      className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
+                      onClick={() => handleEditClick(value)}
+                    >
+                      <Pencil size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
-        </table>
-        </div>
+          </table>
+        </div> */}
 
-        {/* bottom */}
-        <div className="flex items-center justify-between p-4 border-t border-blue-gray-50">
+        {/* <div className="flex items-center justify-between p-4  border-blue-gray-50">
             <p className="text-sm">
-                Page {currentPage} of {Math.ceil(result.length / pageSize)}
+                Page {currentPage} of {Math.ceil(totalPage / pageSize)}
             </p>
             <div className="flex gap-2">
                 <button 
                     onClick={handlePrevious} 
                     disabled={currentPage === 1}
-                    className="select-none rounded-lg border border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+                    className="select-none rounded-lg border dark:border-gray-50 dark:text-gray-50  border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
                     >
                     Previous
                 </button>
                 <button
                     onClick={handleNext}
-                    disabled={currentPage >= Math.ceil(result.length / pageSize)}
-                    className="select-none rounded-lg border border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+                    disabled={currentPage >= Math.ceil(totalPage / pageSize)}
+                    className="select-none rounded-lg border dark:border-gray-50 dark:text-gray-50 border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
                     >  
                     Next
                 </button>
             </div>
-       </div>
+       </div> */}
+       </>
+        ): <NoContent message='No advertisements available'/>}
+
 
         {/* modalCreateEmployee */}
         {createModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div className="bg-white p-4 rounded-md shadow-lg max-w-md">
-                <h1 className="text-center text-xl font-semibold">Create Advertisement</h1>
-                <form className="mx-auto max-w-xs flex flex-col gap-4" onSubmit={handleSubmit}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white dark:bg-gray-900 p-6 rounded-md shadow-lg max-w-md w-full border dark:border-gray-700">
+            <h1 className="text-center text-xl font-semibold text-gray-900 dark:text-white mb-4">
+              Create Advertisement
+            </h1>
 
-                    <div className="mt-1">
-                    <div className="flex flex-col">
-                        <input
-                        type="text"
-                        name="title"
-                        placeholder="Enter title"
-                        className="border p-1 rounded-md"
-                        onChange={handleChange}
-                        />
-                        {errors && errors.title && (
-                        <span className="text-red-500 text-sm mt-1">{errors.title}</span>
-                        )}
-                    </div>
-                    </div>
+            <form className="mx-auto max-w-xs flex flex-col gap-3" onSubmit={handleSubmit}>
+              {/* Title */}
+              <div>
+                <input
+                  type="text"
+                  name="title"
+                  placeholder="Enter title"
+                  className="border p-2 rounded-md w-full focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white transition"
+                  onChange={handleChange}
+                />
+                {errors?.title && <span className="text-red-500 text-xs">{errors.title}</span>}
+              </div>
 
-                    <div className="mt-1">
-                    <div className="flex flex-col">
-                        <input
-                        type="text"
-                        name="subtitle"
-                        placeholder="Enter subtitle"
-                        className="border p-1 rounded-md"
-                        onChange={handleChange}
-                        />
-                        {errors && errors.subtitle && (
-                        <span className="text-red-500 text-sm mt-1">{errors.subtitle}</span>
-                        )}
-                    </div>
-                    </div>
+              {/* Subtitle */}
+              <div>
+                <input
+                  type="text"
+                  name="subtitle"
+                  placeholder="Enter subtitle"
+                  className="border p-2 rounded-md w-full focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white transition"
+                  onChange={handleChange}
+                />
+                {errors?.subtitle && <span className="text-red-500 text-xs">{errors.subtitle}</span>}
+              </div>
 
-                    <div className="mt-1">
-                    <div className="flex flex-col">
-                        <textarea
-                        name="content"
-                        placeholder="write content"
-                        className="border p-1 rounded-md"
-                        onChange={handleChange}
-                        />
-                        {errors && errors.content && (
-                        <span className="text-red-500 text-sm mt-1">{errors.content}</span>
-                        )}
-                    </div>
-                    </div>
+              {/* Content */}
+              <div>
+                <textarea
+                  name="content"
+                  placeholder="Write content"
+                  className="border p-2 rounded-md w-full focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white transition"
+                  rows={3}
+                  onChange={handleChange}
+                />
+                {errors?.content && <span className="text-red-500 text-xs">{errors.content}</span>}
+              </div>
 
-                    <div className="flex flex-col items-center justify-center">
-                    <div className="flex flex-wrap gap-2 mt-4">
-                        {imagePreviews.map((preview, index) => (
-                        <div key={index} className="relative" onDoubleClick={() => handleImageClick(index)}>
-                            <img
-                            src={preview}
-                            alt={`Preview ${index}`}
-                            className="w-16 h-16 object-cover rounded-md"
-                            />
-                            <button
-                            className="absolute top-0 right-0 bg-customPink text-white text-center rounded-full h-5 w-5 hover:bg-red-600 flex items-end justify-center"
-                            onClick={() => handleImageRemove(index)}
-                            >
-                            <span>x</span>
-                            </button>
-                        </div>
-                        ))}
-                    {/* </div> */}
-                    <label htmlFor="file-upload" className="w-16 h-16 bg-gray-300 rounded-md flex items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-400 transition-all">
-                        <Plus/>
-                    </label>
-                    {errors.image && <span className='text-red-500'>{errors.image}</span>}
-                    <input 
-                    id="file-upload" 
-                    name='image' 
-                    type="file"
-                    className="hidden" 
-                    onChange={handleImageUpload}
+              {/* Image Upload */}
+              <div className="flex flex-wrap gap-2 justify-center mt-3">
+                {imagePreviews.map((preview, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={preview}
+                      alt={`Preview ${index}`}
+                      className="w-16 h-16 object-cover rounded-md border dark:border-gray-700 shadow-md"
+                      onDoubleClick={() => handleImageClick(index)}
                     />
-
-                    </div>
-                    <p className="text-xs text-gray-500 text-center dark:text-gray-400"> Upload Image<br></br>
-                        Double click to resize the image
-                    </p>
-                    </div>
-
-                    <div className="mt-1 flex justify-center">
-                    <button className="border p-1 rounded-md shadow-md" type="submit">
-                        Create
-                    </button>
                     <button
-                        className="border p-1 rounded-md ml-2 bg-darkGray text-white"
-                        type="button"
-                        onClick={handleCancel}
+                      type="button"
+                      className="absolute top-0 right-0 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                      onClick={() => handleImageRemove(index)}
                     >
-                        Cancel
+                      ✕
                     </button>
-                    </div>
-                </form>
-                </div>
-            </div>
+                  </div>
+                ))}
+
+                {/* Upload Button */}
+                <label
+                  htmlFor="file-upload"
+                  className="w-16 h-16 bg-gray-300 dark:bg-gray-700 rounded-md flex items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-400 dark:hover:bg-gray-600 transition-all shadow-md"
+                >
+                  <Plus />
+                </label>
+                <input id="file-upload" name="image" type="file" className="hidden" onChange={handleImageUpload} />
+              </div>
+              <p className="text-xs text-gray-500 text-center dark:text-gray-400">
+                Upload Image <br /> Double click to resize the image
+              </p>
+              {errors?.image && <span className="text-red-500">{errors.image}</span>}
+
+              {/* Buttons */}
+              <div className="flex justify-center gap-3 mt-4">
+                <button
+                  type="submit"
+                  className="bg-black text-white px-4 py-2 rounded-md hover:bg-slate-900 transition focus:ring-2 focus:ring-blue-400 text-sm"
+                >
+                  Create
+                </button>
+                <button
+                  type="button"
+                  className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition focus:ring-2 focus:ring-gray-300 text-sm"
+                  onClick={handleCancel}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
         )}
 
         {/* crop */}
         {currentImageIndex !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-white p-4 rounded-md shadow-lg max-w-md">
-            <ReactCrop
-                crop={crop}
-                onChange={(c) => setCrop(c)}
-                onComplete={(c) => handleCropComplete(c)}
-                aspect={1 / 1} // Adjust the aspect ratio as needed
-            >
-                <img
-                ref={imageRef}
-                src={imagePreviews[currentImageIndex]}
-                alt="Crop preview"
-                className="max-w-full max-h-[80vh] object-contain"
-                />
-            </ReactCrop>
-            <button
-                onClick={() => setCurrentImageIndex(null)}
-                className="mt-4 w-full p-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
-            >
-                Cancel
-            </button>
-            </div>
-        </div>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+              <div className="bg-white p-4 rounded-md shadow-lg max-w-md">
+              <ReactCrop
+                  crop={crop}
+                  onChange={(c) => setCrop(c)}
+                  onComplete={(c) => handleCropComplete(c)}
+                  aspect={1 / 1} // Adjust the aspect ratio as needed
+              >
+                  <img
+                  ref={imageRef}
+                  src={imagePreviews[currentImageIndex]}
+                  alt="Crop preview"
+                  className="max-w-full max-h-[80vh] object-contain"
+                  />
+              </ReactCrop>
+              <button
+                  onClick={() => setCurrentImageIndex(null)}
+                  className="mt-4 w-full p-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
+              >
+                  Cancel
+              </button>
+              </div>
+          </div>
         )}
 
         {/* modalFilter */}
         {filterModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-white p-4 rounded-md shadow-lg max-w-md">
-                <h1 className="text-center text-xl font-semibold">Filter</h1>
-                <form className="mx-auto max-w-xs flex flex-col gap-4" onSubmit={handleFilter}>
-                
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity">
+            <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg max-w-md w-full border dark:border-gray-700">
+              <h1 className="text-center text-xl font-semibold text-gray-900 dark:text-white">Filter</h1>
+
+              <form className="mx-auto max-w-xs flex flex-col gap-4" onSubmit={handleFilter}>
                 {/* Date Range Input */}
-                <div className="flex flex-col mt-1">
-                    <label className="text-sm font-semibold">Start Date</label>
-                    <input
+                <div className="flex flex-col">
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Start Date</label>
+                  <input
                     type="date"
                     name="startDate"
-                    className="border p-1 rounded-md"
+                    className="border px-3 py-2 rounded-md dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
                     onChange={handleFilterChange}
-                    />
+                  />
                 </div>
-                <div className="flex flex-col mt-1">
-                    <label className="text-sm font-semibold">End Date</label>
-                    <input
+
+                <div className="flex flex-col">
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">End Date</label>
+                  <input
                     type="date"
                     name="endDate"
-                    className="border p-1 rounded-md"
+                    className="border px-3 py-2 rounded-md dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
                     onChange={handleFilterChange}
-                    />
-                    {errors && <span className='text-red-500'>{errors.date}</span>}
+                  />
+                  {errors && <span className="text-red-500 text-sm mt-1">{errors.date}</span>}
                 </div>
-                
 
                 {/* Status Input */}
-                <div className="mt-2 flex flex-col">
-                    <label className="text-sm font-semibold">Status</label>
-                    <select
+                <div className="flex flex-col">
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Status</label>
+                  <select
                     name="status"
-                    className="border p-1 rounded-md"
+                    className="border px-3 py-2 rounded-md dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
                     onChange={handleFilterChange}
-                    >
+                  >
                     <option value="">Select Status</option>
                     <option value="-1">Unlisted</option>
                     <option value="1">Listed</option>
-                    </select>
+                  </select>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="mt-1 flex justify-center">
-    
-                    <button className="border p-1 rounded-md shadow-md" type="submit">
+                <div className="flex justify-center gap-3">
+                  <button
+                    className="bg-black text-white px-4 py-2 rounded-md hover:bg-slate-900 transition focus:ring-2 focus:ring-blue-400 text-sm"
+                    type="submit"
+                  >
                     Apply
-                    </button>
-                
+                  </button>
 
-                    <button
-                    className="border p-1 rounded-md ml-2 bg-darkGray text-white"
+                  <button
+                    className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition focus:ring-2 focus:ring-gray-300 text-sm"
                     type="button"
                     onClick={() => setFilterModal(false)}
-                    >
+                  >
                     Cancel
-                    </button>
+                  </button>
                 </div>
-                </form>
+              </form>
             </div>
-            </div>
+          </div>
         )}
 
 
-      {editModal && (
+        {editModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity">
-            <div className="bg-white p-6 rounded-lg shadow-lg transform transition-transform scale-95">
-            <h2 className="text-lg font-bold mb-4 text-darkGray">Edit Advertisement</h2>
-            <form onSubmit={handleEditSubmit}>
-                <div className="mb-4">
-                <label className="block text-sm font-medium mb-1 text-nightBlack">title</label>
+            <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg max-w-md w-full border dark:border-gray-700">
+            <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Edit Advertisement</h2>
+
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+                {/* Title Input */}
+                <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
                 <input
                     type="text"
-                    name='title'
-                    value={editFormData?.title || ''}
-                    onChange={(e) =>
-                    setEditFormData((prev) => prev && { ...prev, title: e.target.value })
-                    }
-                    className="w-full border rounded-md px-3 py-2 text-darkGray"
-                    required
-                />
-                <label className="block text-sm font-medium mb-1 text-nightBlack">subtitle</label>
-                <input
-                    type="text"
-                    name='subtitle'
-                    value={editFormData?.subtitle || ''}
-                    onChange={(e) =>
-                    setEditFormData((prev) => prev && { ...prev, subtitle: e.target.value })
-                    }
-                    className="w-full border rounded-md px-3 py-2 text-darkGray"
-                    required
-                />
-                <label className="block text-sm font-medium mb-1 text-nightBlack">content</label>
-                <input
-                    type="textarea"
-                    name='content'
-                    value={editFormData?.content || ''}
-                    onChange={(e) =>
-                    setEditFormData((prev) => prev && { ...prev, content: e.target.value })
-                    }
-                    className="w-full border rounded-md px-3 py-2 text-darkGray"
+                    name="title"
+                    value={editFormData?.title || ""}
+                    onChange={(e) => setEditFormData((prev) => prev && { ...prev, title: e.target.value })}
+                    className="w-full border rounded-md px-3 py-2 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
                     required
                 />
                 </div>
-                <div className="flex justify-end gap-2">
+
+                {/* Subtitle Input */}
+                <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Subtitle</label>
+                <input
+                    type="text"
+                    name="subtitle"
+                    value={editFormData?.subtitle || ""}
+                    onChange={(e) => setEditFormData((prev) => prev && { ...prev, subtitle: e.target.value })}
+                    className="w-full border rounded-md px-3 py-2 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
+                    required
+                />
+                </div>
+
+                {/* Content Textarea */}
+                <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Content</label>
+                <textarea
+                    name="content"
+                    value={editFormData?.content || ""}
+                    onChange={(e) => setEditFormData((prev) => prev && { ...prev, content: e.target.value })}
+                    className="w-full border rounded-md px-3 py-2 h-24 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
+                    required
+                />
+                </div>
+
+                {/* Buttons */}
+                <div className="flex justify-end gap-3">
                 <button
                     type="submit"
-                    className="px-4 py-2 bg-customPink text-white rounded-md"
+                    className="bg-black text-white px-4 py-2 rounded-md hover:bg-slate-900 transition focus:ring-2 focus:ring-blue-400 text-sm"
                 >
                     Save
                 </button>
                 <button
                     type="button"
                     onClick={() => setEditModal(false)}
-                    className="px-4 py-2 bg-lightGray rounded-md"
+                    className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition focus:ring-2 focus:ring-gray-300 text-sm"
                 >
                     Cancel
                 </button>
-
                 </div>
             </form>
             </div>
         </div>
         )}
 
-
     </div>
-  
-  )
+    )
 }
 
 export default AdvertisementTable

@@ -1,13 +1,13 @@
 import React from 'react'
-import Header from '@/components/employee/Header'
-import Footer from '@/components/employee/Footer'
+import Header from '@/components/reusables/Header'
+import Footer from '@/components/reusables/Footer'
 import SideBar from '@/components/employee/SideBar'
 import Dashboard from '@/components/employee/Dashboard'
 const DashBoard: React.FC = () => {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen select-none caret-transparent dark:bg-nightBlack ">
       {/* Header */}
-      <Header />
+      <Header htmlFor='employee' />
 
       {/* Main Content Area */}
       <div className="flex flex-1">
@@ -17,13 +17,13 @@ const DashBoard: React.FC = () => {
         </aside>
 
         {/* Dashboard */}
-        <div className="flex-1 p-6 bg-gray-50 min-h-screen">
+        <div className="flex-1 p-6 bg-gray-50 min-h-screen dark:bg-nightBlack">
           <Dashboard />
         </div>
       </div>
 
       {/* Footer */}
-      <Footer />
+      <Footer htmlFor='employee'/>
     </div>
   );
 };

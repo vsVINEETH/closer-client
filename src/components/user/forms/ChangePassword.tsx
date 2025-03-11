@@ -3,8 +3,8 @@
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-import useAxios from "@/hooks/useAxios/useAxios";
-import { successToast, warnToast } from "@/utils/toasts/toats";
+import { successToast} from "@/utils/toasts/toast";
+import { useSecurity } from "@/hooks/crudHooks/user/useSecurity";
 
 interface Errors {
   currentPassword?: string;
@@ -25,8 +25,9 @@ export default function PasswordForm() {
     newPassword: "",
     confirmPassword: "",
   });
+
   const [error, setError] = useState<Errors>({});
-  const { handleRequest } = useAxios();
+  const {changePassword} = useSecurity();
 
   const userInfo = useSelector((state: RootState) => state.user.userInfo);
 
@@ -45,18 +46,8 @@ export default function PasswordForm() {
     setError({});
     try {
       if (validation()) {
-        const response = await handleRequest({
-          url: "/api/user/change_password",
-          method: "POST",
-          data: {
-            id: userInfo?.id,
-            formData: formData,
-          },
-        });
-
-        if (response.error) {
-          warnToast(response.error);
-        }
+        if(!userInfo?.id) return;
+        const response = await changePassword(userInfo?.id, formData);
 
         if (response.data) {
           successToast(response.data.message);
@@ -68,6 +59,7 @@ export default function PasswordForm() {
         }
       }
     } catch (error) {
+      console.error(error)
       setError({ notFound: "Invalid current password" });
     }
   };
@@ -96,80 +88,82 @@ export default function PasswordForm() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto bg-white dark:bg-darkGray border dark:border-darkGray shadow-md rounded px-8 pt-6 pb-8 mb-4">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-lightGray">
-        Change Password
-      </h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label
-            htmlFor="current-password"
-            className="block text-gray-700 text-sm font-semibold mb-2 dark:text-lightGray"
-          >
-            Current Password
-          </label>
-          <input
-            id="current-password"
-            type="text"
-            value={formData.currentPassword}
-            name="currentPassword"
-            onChange={handleChange}
-            required
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          />
-          {error.currentPassword && (
-            <span className="text-red-500">{error.currentPassword}</span>
-          )}
-        </div>
-        <div>
-          <label
-            htmlFor="new-password"
-            className="block text-gray-700 text-sm font-semibold mb-2 dark:text-lightGray"
-          >
-            New Password
-          </label>
-          <input
-            id="new-password"
-            type="text"
-            value={formData.newPassword}
-            name="newPassword"
-            onChange={handleChange}
-            required
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          />
-          {error.newPassword && (
-            <span className="text-red-500">{error.newPassword}</span>
-          )}
-        </div>
-        <div>
-          <label
-            htmlFor="confirm-password"
-            className="block text-gray-700 text-sm font-semibold mb-2 dark:text-lightGray"
-          >
-            Confirm New Password
-          </label>
-          <input
-            id="confirm-password"
-            type="text"
-            value={formData.confirmPassword}
-            name="confirmPassword"
-            onChange={handleChange}
-            required
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          />
-          {error.confirmPassword && (
-            <span className="text-red-500">{error.confirmPassword}</span>
-          )}
-        </div>
-        <div>
-          <button
-            type="submit"
-            className="w-full bg-customPink hover:bg-red-500 dark:bg-nightBlack dark:hover:bg-gray-500 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          >
-            Change Password
-          </button>
-        </div>
-      </form>
+<div className="w-full max-w-md mx-auto bg-white dark:bg-darkGray border dark:border-darkGray shadow-lg rounded-lg p-8">
+  <h2 className="text-2xl font-bold text-center text-gray-800 dark:text-lightGray mb-6">
+    Change Password
+  </h2>
+  <form onSubmit={handleSubmit} className="space-y-5">
+    <div className="flex flex-col gap-1">
+      <label
+        htmlFor="current-password"
+        className="text-gray-700 text-sm font-semibold dark:text-lightGray"
+      >
+        Current Password
+      </label>
+      <input
+        id="current-password"
+        type="password"
+        value={formData.currentPassword}
+        name="currentPassword"
+        onChange={handleChange}
+        required
+        className="border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-white bg-gray-50 dark:bg-darkGray focus:ring-2 focus:ring-customPink outline-none transition"
+      />
+      {error.currentPassword && (
+        <span className="text-red-500 text-xs mt-1">{error.currentPassword}</span>
+      )}
     </div>
+
+    <div className="flex flex-col gap-1">
+      <label
+        htmlFor="new-password"
+        className="text-gray-700 text-sm font-semibold dark:text-lightGray"
+      >
+        New Password
+      </label>
+      <input
+        id="new-password"
+        type="password"
+        value={formData.newPassword}
+        name="newPassword"
+        onChange={handleChange}
+        required
+        className="border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-white bg-gray-50 dark:bg-darkGray focus:ring-2 focus:ring-customPink outline-none transition"
+      />
+      {error.newPassword && (
+        <span className="text-red-500 text-xs mt-1">{error.newPassword}</span>
+      )}
+    </div>
+
+    <div className="flex flex-col gap-1">
+      <label
+        htmlFor="confirm-password"
+        className="text-gray-700 text-sm font-semibold dark:text-lightGray"
+      >
+        Confirm New Password
+      </label>
+      <input
+        id="confirm-password"
+        type="password"
+        value={formData.confirmPassword}
+        name="confirmPassword"
+        onChange={handleChange}
+        required
+        className="border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-white bg-gray-50 dark:bg-darkGray focus:ring-2 focus:ring-customPink outline-none transition"
+      />
+      {error.confirmPassword && (
+        <span className="text-red-500 text-xs mt-1">{error.confirmPassword}</span>
+      )}
+    </div>
+
+    <button
+      type="submit"
+      className="w-full bg-customPink hover:bg-red-500 dark:bg-nightBlack dark:hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-customPink"
+    >
+      Change Password
+    </button>
+  </form>
+</div>
+
   );
 }

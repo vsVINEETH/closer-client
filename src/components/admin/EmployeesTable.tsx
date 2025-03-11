@@ -1,8 +1,12 @@
 'use client'
 import React, {useState, useEffect} from 'react';
-import { ChevronsUpDown, SlidersHorizontal, UserPlus, Search } from 'lucide-react';
-import useAxios from '@/hooks/useAxios/useAxios';
-import { errorToast, successToast } from '@/utils/toasts/toats';
+import { SlidersHorizontal, UserPlus, Search} from 'lucide-react';
+import { errorToast, successToast } from '@/utils/toasts/toast';
+import { blockConfirm, createConfirm } from '@/utils/sweet_alert/sweetAlert';
+import { useFetch } from '@/hooks/fetchHooks/useAdminFetch';
+import { useEmployeeCrud } from '@/hooks/crudHooks/admin/useEmployeeCrud';
+import NoContent from '../reusables/NoContent';
+import DataTable from '../reusables/Table';
 
 interface EmployeeData {
     id: string,
@@ -21,32 +25,49 @@ interface FilterOption {
     startDate: string,
     endDate: string,
     status: boolean | undefined,
-}
+};
 
 interface Errors {
     name?: string,
     email?: string,
     date?: string,
-}
+};
+
+const column = [
+  { key: "id", label: "EMP ID", sortable: true },
+  { key: "name", label: "Employee", sortable: true },
+  
+  { 
+    key: "isBlocked", 
+    label: "Status", 
+    sortable: false, 
+    render: (item: EmployeeData) => (item.isBlocked ? "Blocked" : "Active") 
+  },
+  { key: "createdAt", label: "Employed", sortable: true },
+]
 
 const EmployeesTable: React.FC = () => {
-    const [createModal, setCreateModal] = useState<Boolean>(false);
+    const [createModal, setCreateModal] = useState<boolean>(false);
     const [createFormData, setCreateFormData] = useState<createFormData>({name: '', email: ''});
     const [errors, setErrors] = useState<Errors>({});
 
+    // search and filter
     const [searchValue, setSearchValue] = useState<string>('');
     const [sortConfig, setSortConfig] = useState<{ column: keyof EmployeeData; direction: 'asc' | 'desc' } | null>(null);
-
-    const [filterModal, setFilterModal] = useState<Boolean>(false);
     const [filterOption, setFilterOption] = useState<FilterOption>({startDate: '', endDate: '', status: undefined});
-    const [filterStatus, setFilterStatus] = useState<Boolean>(false);
+   
+    const [filterModal, setFilterModal] = useState<boolean>(false);
+    const [filterStatus, setFilterStatus] = useState<boolean>(false);
 
     const [currentPage, setCurrentPage] = useState<number>(1);
-    const [pageSize, setPageSize] = useState<number>(3);
+    const [pageSize] = useState<number>(3);
+
     const [totalPage, setTotal] = useState<number>(0)
 
     const [result, setReasult] = useState<EmployeeData[]>([]);
-    const {handleRequest} = useAxios()
+
+    const {createEmployee, blockEmployee} = useEmployeeCrud()
+    const {getEmployeeData} = useFetch();
 
     useEffect(() => {
         fetchData();
@@ -54,23 +75,17 @@ const EmployeesTable: React.FC = () => {
 
     const fetchData = async () => {
         try {
-            const response = await handleRequest({
-                url:'/api/admin/employee_data',
-                method:'GET',
-                params: {
-                    search: searchValue || '',
-                    startDate: filterOption.startDate || '',
-                    endDate: filterOption.endDate || '',
-                    status: filterOption.status,
-                    sortColumn: sortConfig?.column || 'createdAt',
-                    sortDirection: sortConfig?.direction || 'asc',
-                    page: currentPage,
-                    pageSize: pageSize,
-                },
+            const response = await getEmployeeData({
+                search: searchValue || '',
+                startDate: filterOption.startDate || '',
+                endDate: filterOption.endDate || '',
+                status: filterOption.status,
+                sortColumn: sortConfig?.column || 'createdAt',
+                sortDirection: sortConfig?.direction || 'asc',
+                page: currentPage,
+                pageSize: pageSize,
             });
-            if(response.error){
-                errorToast(response.error);
-            };
+
             if(response.data){
                 const data = response.data;
                 setReasult(data.employee);
@@ -80,7 +95,36 @@ const EmployeesTable: React.FC = () => {
         } catch (error) {
            errorToast(error);
         }
-    }
+    };
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if(validation()){
+            const confirm = await createConfirm();
+            if(!confirm){return};
+            const response = await createEmployee(createFormData);
+
+            if(response.data){
+                successToast('Employee created')
+                setCreateModal(false);
+                fetchData(); // it should be changed
+            }
+        }
+
+    };
+
+    const handleBlock = async (employeeId: string, index: number) => {
+        
+        const confirm = await blockConfirm(!result[index].isBlocked);
+        if(!confirm){return}
+        const response = await blockEmployee(employeeId)
+
+        if(response.data){
+            successToast("Employee has been blocked");
+            //setReasult(response.data.employee);
+            fetchData()
+        }
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, value} = e.target;
@@ -90,49 +134,10 @@ const EmployeesTable: React.FC = () => {
         }))
         setErrors({})
     }
-
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if(validation()){
-            const response = await handleRequest({
-                url:'/api/admin/create_employee',
-                method:'POST',
-                data: createFormData
-            });
-            if(response.error){
-                errorToast('Existing Employee')
-            }
-            if(response.data){
-                successToast('Employee created')
-                setCreateModal(false);
-                fetchData()
-            }
-        }
-
-    }
-
+    
     const handleCancel = () => {
         setCreateModal(false);
         setErrors({});
-    }
-
-    const handleBlock = async (id: string) => {
-        const response = await handleRequest({
-            url:'/api/admin/block_employee',
-            method:'POST',
-            data:{
-                id: id
-            }
-        });
-
-        if(response.error){
-            errorToast(response.error)
-        }
-        if(response.data){
-            successToast("Employee has been blocked");
-            //setReasult(response.data.employee);
-            fetchData()
-        }
     }
 
     const validation = () => {
@@ -152,15 +157,18 @@ const EmployeesTable: React.FC = () => {
           setErrors(newErrors);
           return Object.keys(newErrors).length === 0;
         
-    }
-
-    const handleSort = (column: keyof EmployeeData) => {
-        setSortConfig((prev) => ({
-            column,
-            direction: prev?.column === column && prev.direction === 'asc' ? 'desc' : 'asc',
-        }));
     };
 
+    const handleSort = (column: keyof EmployeeData) => {
+        setSortConfig((prev) => {
+            const isSameColumn = prev?.column === column;
+            return {
+                column,
+                direction: isSameColumn && prev?.direction === 'asc' ? 'desc' : 'asc',
+            };
+        });
+    };
+    
 //filter
     const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const {name, value} = e.target
@@ -241,29 +249,26 @@ const EmployeesTable: React.FC = () => {
             </h5>
 
             </div>
+
             <div className="flex flex-col gap-2 shrink-0 sm:flex-row">
-          { !filterStatus ? 
+            
              <button
                 className="select-none rounded-lg border flex gap-1 dark:text-lightGray dark:border-lightGray  border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-                type="button" onClick={() => setFilterModal(true)}>
-                 <SlidersHorizontal size={10}/>
-                Filter
+                type="button" onClick={ !filterStatus ? () => setFilterModal(true) : removeFilter}>
+                 <SlidersHorizontal size={15}/>
+              { !filterStatus ?  "Filter" : 'Remove'}
              </button>
-            :
-            <button
-            className="select-none rounded-lg border flex gap-1 dark:text-lightGray dark:border-lightGray  border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-            type="button" onClick={removeFilter}>
-             <SlidersHorizontal size={10}/>
-            Remove
-           </button>
-         }
-            <button
+           
+      
+             <button
                 className="flex select-none items-center gap-3 rounded-lg dark:text-darkGray dark:bg-lightGray bg-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-white shadow-md shadow-gray-900/10 transition-all hover:shadow-lg hover:shadow-gray-900/20 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
                 type="button" onClick={() => setCreateModal(true)} >
                 <UserPlus size={15}/>
                 Add Employee
-            </button>
-            </div>
+             </button>
+             
+         </div>
+       
         </div>
         <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
             <div className="block w-full overflow-hidden md:w-max">
@@ -275,7 +280,7 @@ const EmployeesTable: React.FC = () => {
                     <Search size={18} />
                 </div>
                     <input
-                        className="peer h-full w-full rounded-[7px] border border-blue-gray-200 dark:border-gray-600 border-t-transparent bg-transparent dark:bg-gray-800 px-3 py-2.5 !pr-9 font-sans text-sm font-normal text-blue-gray-700 dark:text-gray-200 outline outline-0 transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 dark:placeholder-shown:border-gray-600 dark:placeholder-shown:border-t-gray-600 focus:border-2 focus:border-gray-900 dark:focus:border-gray-400 focus:border-t-transparent dark:focus:border-t-transparent focus:outline-0 disabled:border-0 disabled:bg-blue-gray-50 dark:disabled:bg-gray-700"
+                        className="peer h-full w-full rounded-[7px] border border-blue-gray-200 dark:border-gray-600 border-t-transparent bg-transparent dark:bg-darkGray px-3 py-2.5 !pr-9 font-sans text-sm font-normal text-blue-gray-700 dark:text-gray-200 outline outline-0 transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 dark:placeholder-shown:border-gray-600 dark:placeholder-shown:border-t-gray-600 focus:border-2 focus:border-gray-900 dark:focus:border-gray-400 focus:border-t-transparent dark:focus:border-t-transparent focus:outline-0 disabled:border-0 disabled:bg-blue-gray-50 dark:disabled:bg-gray-700"
                         placeholder=" "
                         onChange={(e) => setSearchValue(e.target.value)}
                     />
@@ -291,124 +296,69 @@ const EmployeesTable: React.FC = () => {
         </div>
 
         {/* table */}
-        <div className="p-6 px-0 overflow-scroll overflow-x-hidden overflow-y-hidden">
-        <table className="w-full mt-4 text-left table-auto min-w-max">
-            <thead className='text-center'>
-            <tr >
-            <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                    EMP ID
-                    <ChevronsUpDown size={13} onClick={() => handleSort('id')}/>
-                </p>
+     { result.length ? ( 
+        <>
+        <DataTable 
+        columns={column} 
+        data={result} 
+        onBlocked={handleBlock} 
+        onSort={handleSort} 
+        pageSize={pageSize}
+        totalPage={totalPage}
+        currentPage={currentPage}
+        handleNext={handleNext}
+        handlePrevious={handlePrevious}
+        />
+       
+        {/* <div className="p-6 px-0 overflow-x-auto">
+        <table className="w-full mt-4 text-left border-collapse rounded-lg shadow-md overflow-hidden">
+            <thead className="bg-gray-100 dark:bg-darkGray text-gray-800 dark:text-gray-300 text-sm tracking-wider">
+            <tr>
+            {['EMP ID', 'Employee', 'Status', 'Employed', 'Action'].map((header, index) => (
+                <th key={index} className="p-4 border-b border-gray-300 dark:border-gray-700 text-center cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+                    onClick={() =>  header !== 'Action' ? handleSort(columnMap[header]) : null
+                    }>
+                    <div className="flex items-center justify-center gap-2">
+                        {header}
+                        {['EMP ID', 'Employee', 'Employed'].includes(header) && <ChevronsUpDown size={14} />}
+                    </div>
                 </th>
-                <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                    Employee
-                    <ChevronsUpDown size={13} onClick={() => handleSort('name')}/>
-                </p>
-                </th>
-                <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                        Status
-                    <ChevronsUpDown size={13}/>
-                </p>
-                </th>
-                <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                    Employed
-                    <ChevronsUpDown size={13} onClick={() => handleSort('createdAt')}/>
-                </p>
-                </th>
-                <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                  <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                    Action
-                </p>
-                </th>
+            ))}
             </tr>
             </thead>
 
-            <tbody>
+            <tbody className="text-gray-800 dark:text-gray-200 text-sm">
+            {result?.map((value, index) => (
+            <tr key={index} className="border-b border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-darkGray transition-all">
+                <td className="p-4 text-center font-medium">{value.id.slice(7, 16)}</td>
+                <td className="p-4 text-center truncate max-w-[150px]">
+                    <p className="font-medium">{value.name}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{value.email}</p>
+                </td>
+                <td className="p-4 text-center">
+                    <span className={`px-3 py-1 text-xs font-semibold rounded-md uppercase ${value.isBlocked ? 'bg-red-500/20 text-red-600 dark:bg-red-400/20 dark:text-red-300' : 'bg-green-500/20 text-green-600 dark:bg-green-400/20 dark:text-green-300'}`}>
+                        {value.isBlocked ? 'Blocked' : 'Active'}
+                    </span>
+                </td>
+                <td className="p-4 text-center">{value.createdAt}</td>
+                <td className="p-4 flex justify-center gap-3">
 
-            {result.map((value, index) => {
-            return(
-            <tr key={index}>
-            <td className="p-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex flex-col">
-                    <p
-                        className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900 opacity-70">
-                        {value.id.split('').slice(7,16).join("")}
-                    </p>
-                    </div>
-                </div>
+                
+                    <button className="px-4 py-1.5 text-xs font-semibold uppercase border rounded-lg transition-all dark:border-gray-500 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                        onClick={() => handleBlock(value.id, index)}>
+                        {value.isBlocked ? 'Unblock' : 'Block'}
+                    </button>
+           
                 </td>
-                <td className="p-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex flex-col">
-                    <p className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                        {value.name}
-                    </p>
-                    <p
-                        className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900 opacity-70">
-                        {value.email}
-                    </p>
-                    </div>
-                </div>
-                </td>
-                <td className="p-4">
-                <div className="w-max">
-                    <div
-                    className="relative grid items-center px-2 py-1 font-sans text-xs font-bold uppercase rounded-md select-none whitespace-nowrap bg-blue-gray-500/20 text-blue-gray-900">
-                        {value.isBlocked ?
-                         <span className="">Blocked</span>
-                         :
-                         <span className="">Active</span>
-                        }
-                    
-                    </div>
-                </div>
-                </td>
-                <td className="p-4">
-                <p className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                    {value.createdAt}
-                </p>
-                </td>
-                <td className="p-4">
-                <button
-                    className="relative h-10 max-h-[40px] w-24 max-w-[70px] select-none rounded-lg text-center align-middle font-sans text-xs font-medium uppercase text-gray-900 transition-all hover:bg-gray-900/10 active:bg-gray-900/20 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none border dark:border-lightGray dark:bg-lightGray dark:text-darkGray "
-                    type="button"
-                    onClick={() => handleBlock(value.id)}
-                    >
-                        {value.isBlocked ? 
-                        <span className="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2 dark:text-darkGray">
-                            Unblock
-                        </span> 
-                        :
-                        <span className="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2 dark:text-darkGray">
-                            Block
-                        </span>
-                        }
-                </button>
-             </td>
             </tr>
-            )
-            })}
+            ))}
             </tbody>
         </table>
-        </div>
+        </div> */}
+
 
         {/* bottom */}
-        <div className="flex items-center justify-between p-4 border-t border-blue-gray-50">
+        {/* <div className="flex items-center justify-between p-4  border-blue-gray-50">
             <p className="text-sm">
                 Page {currentPage} of {Math.ceil(totalPage / pageSize)}
             </p>
@@ -416,135 +366,139 @@ const EmployeesTable: React.FC = () => {
                 <button 
                     onClick={handlePrevious} 
                     disabled={currentPage === 1}
-                    className="select-none rounded-lg border border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+                    className="select-none rounded-lg border dark:border-gray-50 dark:text-gray-50 border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
                     >
                     Previous
                 </button>
                 <button
                     onClick={handleNext}
                     disabled={currentPage >= Math.ceil(totalPage / pageSize)}
-                    className="select-none rounded-lg border border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+                    className="select-none rounded-lg border dark:border-gray-50 dark:text-gray-50 border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
                     >  
                     Next
                 </button>
             </div>
-       </div>
+       </div> */}
+       </>
+       ) : <NoContent message='No employees added'/>}
 
         {/* modalCreateEmployee */}
         {createModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div className="bg-white p-4 rounded-md shadow-lg max-w-md">
-                <h1 className="text-center text-xl font-semibold">Create user</h1>
-                <form className="mx-auto max-w-xs flex flex-col gap-4" onSubmit={handleSubmit}>
-                    <div className="mt-1">
-                    <div className="flex flex-col">
-                        <input
-                        type="text"
-                        name="name"
-                        placeholder="Enter name"
-                        className="border p-1 rounded-md"
-                        onChange={handleChange}
-                        />
-                        {errors && errors.name && (
-                        <span className="text-red-500 text-sm mt-1">{errors.name}</span>
-                        )}
-                    </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white dark:bg-gray-900 p-6 rounded-md shadow-lg max-w-md w-full border dark:border-gray-700">
+            <h1 className="text-center text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                Create Employee
+            </h1>
 
-                    <div className="mt-2 flex flex-col">
-                        <input
-                        type="email"
-                        name="email"
-                        placeholder="Enter email"
-                        className="border p-1 rounded-md"
-                        onChange={handleChange}
-                        />
-                        {errors && errors.email && (
-                        <span className="text-red-500 text-sm mt-1">{errors.email}</span>
-                        )}
-                    </div>
-                    </div>
-
-                    <div className="mt-1 flex justify-center">
-                    <button className="border p-1 rounded-md shadow-md" type="submit">
-                        Create
-                    </button>
-                    <button
-                        className="border p-1 rounded-md ml-2 bg-darkGray text-white"
-                        type="button"
-                        onClick={handleCancel}
-                    >
-                        Cancel
-                    </button>
-                    </div>
-                </form>
-                </div>
-            </div>
-        )}
-
-        {/* modalFilter */}
-        {filterModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-white p-4 rounded-md shadow-lg max-w-md">
-                <h1 className="text-center text-xl font-semibold">Filter</h1>
-                <form className="mx-auto max-w-xs flex flex-col gap-4" onSubmit={handleFilter}>
-                
-                {/* Date Range Input */}
-                <div className="flex flex-col mt-1">
-                    <label className="text-sm font-semibold">Start Date</label>
-                    <input
-                    type="date"
-                    name="startDate"
-                    className="border p-1 rounded-md"
-                    onChange={handleFilterChange}
-                    />
-                </div>
-                <div className="flex flex-col mt-1">
-                    <label className="text-sm font-semibold">End Date</label>
-                    <input
-                    type="date"
-                    name="endDate"
-                    className="border p-1 rounded-md"
-                    onChange={handleFilterChange}
-                    />
-                    {errors && <span className='text-red-500'>{errors.date}</span>}
-                </div>
-                
-
-                {/* Status Input */}
-                <div className="mt-2 flex flex-col">
-                    <label className="text-sm font-semibold">Status</label>
-                    <select
-                    name="status"
-                    className="border p-1 rounded-md"
-                    onChange={handleFilterChange}
-                    >
-                    <option value="">Select Status</option>
-                    <option value="-1">Active</option>
-                    <option value="1">Blocked</option>
-                    </select>
+            <form className="mx-auto max-w-xs flex flex-col gap-3" onSubmit={handleSubmit}>
+                {/* Name Input */}
+                <div>
+                <input
+                    type="text"
+                    name="name"
+                    placeholder="Enter name"
+                    className="border p-2 rounded-md w-full focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white transition"
+                    onChange={handleChange}
+                />
+                {errors?.name && <span className="text-red-500 text-xs">{errors.name}</span>}
                 </div>
 
-                {/* Action Buttons */}
-                <div className="mt-1 flex justify-center">
-    
-                    <button className="border p-1 rounded-md shadow-md" type="submit">
-                    Apply
-                    </button>
-                
+                {/* Email Input */}
+                <div>
+                <input
+                    type="email"
+                    name="email"
+                    placeholder="Enter email"
+                    className="border p-2 rounded-md w-full focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white transition"
+                    onChange={handleChange}
+                />
+                {errors?.email && <span className="text-red-500 text-xs">{errors.email}</span>}
+                </div>
 
-                    <button
-                    className="border p-1 rounded-md ml-2 bg-darkGray text-white"
+                {/* Buttons */}
+                <div className="flex justify-center gap-3 mt-4">
+                <button
+                    type="submit"
+                    className="bg-black text-white px-4 py-2 rounded-md hover:bg-slate-900 transition focus:ring-2 focus:ring-blue-400 text-sm"
+                >
+                    Create
+                </button>
+                <button
                     type="button"
-                    onClick={() => setFilterModal(false)}
-                    >
+                    className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition focus:ring-2 focus:ring-gray-300 text-sm"
+                    onClick={handleCancel}
+                >
                     Cancel
-                    </button>
+                </button>
                 </div>
-                </form>
+            </form>
             </div>
-            </div>
+        </div>
         )}
 
+    {filterModal && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity">
+        <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg transform transition-transform scale-95 w-full max-w-md border dark:border-gray-700">
+        <h1 className="text-center text-xl font-semibold text-gray-900 dark:text-white">Filter</h1>
+
+        <form className="mx-auto max-w-xs flex flex-col gap-4" onSubmit={handleFilter}>
+            {/* Date Range Input */}
+            <div className="flex flex-col">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
+            <input
+                type="date"
+                name="startDate"
+                className="border rounded-md px-3 py-2 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
+                onChange={handleFilterChange}
+            />
+            </div>
+
+            <div className="flex flex-col">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
+            <input
+                type="date"
+                name="endDate"
+                className="border rounded-md px-3 py-2 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
+                onChange={handleFilterChange}
+            />
+            {errors?.date && <span className="text-red-500 text-sm">{errors.date}</span>}
+            </div>
+
+            {/* Status Input */}
+            <div className="flex flex-col">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+            <select
+                name="status"
+                className="border rounded-md px-3 py-2 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
+                onChange={handleFilterChange}
+            >
+                <option value="">Select Status</option>
+                <option value="-1">Active</option>
+                <option value="1">Blocked</option>
+            </select>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3">
+            <button
+                type="submit"
+                className="px-4 py-2 bg-black text-white rounded-md hover:bg-slate-900 transition focus:ring-2 focus:ring-blue-400 text-sm"
+            >
+                Apply
+            </button>
+
+            <button
+                type="button"
+                onClick={() => setFilterModal(false)}
+                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition focus:ring-2 focus:ring-gray-300 text-sm"
+            >
+                Cancel
+            </button>
+            </div>
+        </form>
+        </div>
+    </div>
+    )}
     </div>
   
   )

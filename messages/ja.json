@@ -1,0 +1,59 @@
+{
+    "HomePage": {
+      "title": "クローサー"
+    },
+  
+    "Header": {
+      "title": "クローサー",
+      "signIn": "サインイン",
+      "home": "ホーム",
+      "blog": "ブログ",
+      "event": "イベント"
+    },
+  
+    "Footer": {
+      "title": "クローサー",
+      "writing": "心をつなぎ、意味のある関係を築く。今すぐあなたにぴったりの相手を見つけましょう。",
+      "quickLinks": "クイックリンク",
+      "homeLink": "ホーム",
+      "aboutLink": "私たちについて",
+      "servicesLink": "サービス",
+      "contactLink": "お問い合わせ",
+      "followUs": "フォローする",
+      "rights": "@2024 クローサー。すべての権利を保有。"
+    },
+  
+    "LandingComponents": {
+      "titleOne": "あなたの",
+      "titleTwo": "理想の相手を",
+      "titleThree": "見つけよう",
+      "description": "人生はつまらない関係を続けるには短すぎる。すでに特別な人を見つけている何千人ものシングルに参加しましょう。",
+      "getStarted": "今すぐ始める",
+      "signIn": "サインイン",
+      "cardOne": "何千人ものアクティブユーザー",
+      "cardTwo": "意味のある会話",
+      "cardThree": "完璧なマッチングアルゴリズム",
+      "match": "94%のマッチ率！",
+      "comment": "あなたの好みに基づいています"
+    },
+
+    "Login": {
+      "header": "Closer にサインイン",
+      "email": "メールアドレスを入力してください",
+      "password": "パスワードを入力してください",
+      "comment": "ログインするには、資格情報を入力してください",
+      "auth": "Google でサインイン",
+      "signIn": "サインイン",
+      "noAccount": "アカウントをお持ちではありませんか？",
+      "forgotPassword": "パスワードをお忘れですか？",
+       "or": "ou"
+    },
+
+    "Sidebar": {
+  "matches": "マッチ",
+  "messages": "メッセージ",
+  "notifications": "通知"
+}
+
+  }
+  

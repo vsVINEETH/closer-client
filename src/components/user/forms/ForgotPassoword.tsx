@@ -1,8 +1,7 @@
 'use client'
 import React, { useState } from 'react';
-import useAxios from '@/hooks/useAxios/useAxios';
-import { errorToast, warnToast, successToast } from '@/utils/toasts/toats';
-import Link from 'next/link';
+import useAxios from '@/hooks/axiosHooks/useAxios';
+import { warnToast, successToast } from '@/utils/toasts/toast';
 import { useRouter } from 'next/navigation';
 
 interface Errors {
@@ -69,6 +68,7 @@ const ForgotPassword: React.FC = () => {
         }
       }
     } catch (error) {
+      console.error(error)
       setError({ notFound: "Invalid current password" });
     }
   };
