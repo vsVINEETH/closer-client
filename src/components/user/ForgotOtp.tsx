@@ -2,9 +2,8 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import useAxios from "@/hooks/useAxios/useAxios";
-import { errorToast, successToast } from "@/utils/toasts/toats";
-
+import {successToast } from "@/utils/toasts/toast";
+import { useSecurity } from "@/hooks/crudHooks/user/useSecurity";
 
 interface Errors {
   inputOtp?: string;
@@ -16,7 +15,7 @@ const ForgotOtp: React.FC = () => {
   const [errors, setErrors] = useState<Errors>({});
   const [show, setShow] = useState<boolean>(true);
   const [timer, setTimer] = useState<number>(59);
-  const {handleRequest} = useAxios()
+  const {validateOTP, resendVerificationCode} = useSecurity()
   const router = useRouter();
 
   useEffect(() => {
@@ -88,26 +87,15 @@ const ForgotOtp: React.FC = () => {
     if (validateForm()) {
       try {
         const email = localStorage.getItem("email");
-        const response = await handleRequest({
-          url:'/api/user/forgot_verify',
-          method: 'POST',
-          data:{
-            email,
-            otp
-          }
-        })
-
-        if(response.error){
-          errorToast(response.error)
-        }
+        if(!email) return;
+        const response = await validateOTP(email, otp);
 
         if(response.data){
           router.push("/user/login");
           successToast('OTP validated successfully')
         }
       } catch (error) {
-        setErrors({ inputOtp: "Something went wrong. Please try again." });
-        console.error("Error during OTP verification:", error);
+        console.error(error)
       }
     } else {
       setErrors({ inputOtp: "Please enter a valid OTP" });
@@ -119,15 +107,8 @@ const ForgotOtp: React.FC = () => {
       setTimer(59);
       setShow(true);
       const email = localStorage.getItem("email");
-      const response = await handleRequest({
-        url: '/api/user/forgot_resend',
-        method:'POST',
-        data:{email}
-      })
-
-      if(response.error){
-        errorToast(response.error)
-      }
+      if(!email) return;
+      const response = await resendVerificationCode(email);
 
       if(response.data){
         successToast(response.data)
@@ -141,7 +122,7 @@ const ForgotOtp: React.FC = () => {
 
   const validateForm = (): boolean => {
     const newErrors: Errors = {};
-    otp.forEach((element) => {
+     otp.forEach((element) => {
       if (!element.trim()) {
         newErrors.inputOtp = "Fields are empty";
       }

@@ -1,10 +1,13 @@
 'use client'
 import React, {useState, useEffect, useRef} from 'react';
 import ReactCrop, { Crop,} from "react-image-crop";
-import { ChevronsUpDown, SlidersHorizontal, UserPlus, Plus, Search, Pencil, Rewind, Delete } from 'lucide-react';
-import useAxios from '@/hooks/useAxios/useAxios';
-import { errorToast, successToast } from '@/utils/toasts/toats';
-
+import {SlidersHorizontal, Search, Pencil } from 'lucide-react';
+import { errorToast, successToast } from '@/utils/toasts/toast';
+import { createConfirm, deleteConfirm, editConfirm } from '@/utils/sweet_alert/sweetAlert';
+import { useFetch } from '@/hooks/fetchHooks/useAdminFetch';
+import { useEventCrud } from '@/hooks/crudHooks/admin/useEventCrud';
+import DataTable from '../reusables/Table';
+import NoContent from '../reusables/NoContent';
 
 interface EventData {
     _id: string,
@@ -13,6 +16,9 @@ interface EventData {
     image: string[],
     location: string,
     locationURL: string,
+    slots: number,
+    totalEntries: number,
+    price: number,
     eventDate: string,
     createdAt: string,
 }
@@ -24,6 +30,8 @@ interface createFormData {
     location: string,
     locationURL: string,
     eventDate: string,
+    slots: number,
+    price: number,
 }
 
 interface FilterOption {
@@ -38,6 +46,8 @@ interface Errors {
     location?: string,
     image?: string,
     locationURL?: string,
+    slots?: string,
+    price?: string,
     eventDate?: string,
     startDate?: string,
     endDate?: string,
@@ -51,15 +61,25 @@ interface PixelCrop {
     height: number;
   }
   
-  interface CustomCrop extends Crop {
-    aspect?: number;
-  }
-  
+interface CustomCrop extends Crop {
+aspect?: number;
+}
+
+ const columns = [
+    { key: "_id", label: "ID", sortable: true },
+    { key: "title", label: "Title", sortable: true },
+    { key: "description", label: "Description", sortable: false },
+    { key: "image", label: "Images", sortable: false },
+    { key: "location", label: "Location", sortable: true },
+    { key: "eventDate", label: "Event Date", sortable: true },
+    { key: "createdAt", label: "Created At", sortable: true },
+ ];
+
 
 const EventTable: React.FC = () => {
     const [eventData, setEventData] = useState<EventData[]>([]);
-    const [createModal, setCreateModal] = useState<Boolean>(false);
-    const [createFormData, setCreateFormData] = useState<createFormData>({title: '', description:'', image:[], location:'', locationURL: '', eventDate:''});
+    const [createModal, setCreateModal] = useState<boolean>(false);
+    const [createFormData, setCreateFormData] = useState<createFormData>({title: '', description:'', image:[], location:'', locationURL: '', eventDate:'', slots:-Infinity, price:-Infinity});
     const [images, setImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [currentImageIndex, setCurrentImageIndex] = useState<number | null>(null);
@@ -70,55 +90,120 @@ const EventTable: React.FC = () => {
 
     const [searchValue, setSearchValue] = useState<string>('');
     const [sortConfig, setSortConfig] = useState<{ column: keyof EventData; direction: 'asc' | 'desc' } | null>(null);
-
-    const [filterModal, setFilterModal] = useState<Boolean>(false);
     const [filterOption, setFilterOption] = useState<FilterOption>({startDate: '', endDate: '', status: undefined});
-    const [filterData, setFilterData] = useState<EventData[]>([]);
-    const [filterStatus, setFilterStatus] = useState<Boolean>(false);
+
+    const [filterModal, setFilterModal] = useState<boolean>(false);
+    const [filterStatus, setFilterStatus] = useState<boolean>(false);
 
     const [currentPage, setCurrentPage] = useState<number>(1);
-    const [pageSize, setPageSize] = useState<number>(2);
+    const [pageSize] = useState<number>(2);
+    const [totalPage, setTotal] = useState<number>(0);
 
     const [editModal, setEditModal] = useState<boolean>(false);
     const [editFormData, setEditFormData] = useState<EventData | null>(null);
 
     const [result, setResult] = useState<EventData[]>([]);
-    const {handleRequest} = useAxios();
+    const {getEventData} = useFetch();
+    const {createEvent, deleteExistingEvent, editEvent} = useEventCrud()
+
+
+    
 
     useEffect(() => {
         fetchData();
-    },[]);
-
-    useEffect(() => {
-       setResult(
-          searchValue ? filterData.filter(event =>
-            event.title?.toLowerCase().includes(searchValue.toLowerCase())
-          ): filterData
-        )
-    },[searchValue, filterData]);
-
+    }, [searchValue, filterOption, currentPage, pageSize, sortConfig]);
 
     const fetchData = async () => {
         try {
-            const response = await handleRequest({
-                url:'/api/admin/events',
-                method:'GET'
+            const response = await getEventData({
+                search: searchValue || '',
+                startDate: filterOption.startDate || '',
+                endDate: filterOption.endDate || '',
+                status: filterOption.status,
+                sortColumn: sortConfig?.column || 'createdAt',
+                sortDirection: sortConfig?.direction || 'asc',
+                page: currentPage,
+                pageSize: pageSize,
             })
-            if(response.error){
-                errorToast(response.error)
-            }
+
             if(response.data){
                 const data = response.data;
-                console.log(data);
-                setEventData(data);
-                setFilterData(data);
-                setResult(data);
+                setEventData(data.events);
+                setResult(data.events);
+                setTotal(data.total)
             }
             
         } catch (error) {
+            console.error(error)
             errorToast('something happen')
         }
-    }
+    };
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+       
+        if(validation()){
+            const confirm = await createConfirm();
+            if(!confirm){return};
+
+            const eventData = new FormData();
+            eventData.append('title', createFormData.title);
+            eventData.append('description', createFormData.description);
+            images.forEach((image: File) => {
+                eventData.append('images', image);
+            });
+            eventData.append('location', createFormData.location);
+            eventData.append('locationURL', createFormData.locationURL);
+            eventData.append('eventDate', createFormData.eventDate);
+            eventData.append('slots', createFormData.slots.toString());
+            eventData.append('price', createFormData.price.toString());
+            
+            const response = await createEvent(eventData)
+
+            if(response.data){
+                setResult(response.data)
+                setCreateModal(false);
+                setImagePreviews([])
+                successToast('Successfully created')
+            }
+            
+        }
+    };
+
+    const handleDelete = async (eventId: string) => {
+        const confirm = await deleteConfirm();
+        if(!confirm){return};
+        const response = await deleteExistingEvent(eventId);
+
+        if(response.data){
+            setResult(response.data)
+        };
+    };
+
+
+    //edit
+    const handleEditClick = (data: EventData) => {
+    setEditFormData(data);
+    setEditModal(true);
+    };
+
+    const handleEditSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        if (editValidation()) {
+
+        const confirm = await editConfirm();
+        if(!confirm ){return}
+        const response = await editEvent(editFormData ? editFormData : {})
+
+        if(response.data){
+            setEditModal(false)
+            setResult(response.data);
+            successToast('Event updated successfully');
+        }
+        }
+    };
+    
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const {name, value} = e.target;
@@ -129,69 +214,10 @@ const EventTable: React.FC = () => {
         setErrors({})
     }
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if(validation()){
-            const data = new FormData();
-            data.append('title', createFormData.title);
-            data.append('description', createFormData.description);
-            images.forEach((image: File) => {
-                data.append('images', image);
-            });
-            data.append('location', createFormData.location);
-            data.append('locationURL', createFormData.locationURL);
-           data.append('eventDate', createFormData.eventDate);
-
-            console.log(data,'lll')
-            const response = await handleRequest({
-                url: '/api/admin/events',
-                method:'POST',
-                data: data,
-                headers:{
-                    'Content-Type': 'multipart/form-data', 
-                }
-            })
-
-            if(response.error){
-                errorToast(response.error)
-            }
-
-            if(response.data){
-                setResult([])
-                setCreateModal(false);
-                setImagePreviews([])
-                successToast('Successfully created')
-            }
-            
-        }else{
-            console.log('oops')
-        }
-
-    }
-
     const handleCancel = () => {
         setCreateModal(false);
         setErrors({});
         setImagePreviews([])
-    }
-
-
-    const handleDelete = async (id: string) => {
-        const response = await handleRequest({
-            url:'/api/admin/events',
-            method:'DELETE',
-            data:{
-                id:id
-            }
-        });
-
-        if(response.error){
-            errorToast(response.error)
-        }
-
-        if(response.data){
-            setResult(response.data)
-        }
     }
 
     const validation = () => {
@@ -214,7 +240,8 @@ const EventTable: React.FC = () => {
           } else {
             try {
                 new URL(createFormData.locationURL);
-              } catch (e) {
+              } catch (error) {
+                console.error(error);
                 newErrors.locationURL = "Invalid URL";
               }          
           }
@@ -227,6 +254,19 @@ const EventTable: React.FC = () => {
 
           if (images.length < 1){
             newErrors.image = 'minimum 1 image is required'
+          }
+
+
+          if(createFormData.slots <= 0){
+            newErrors.slots = 'minimum 2 entries required'
+          }else if(!createFormData.slots.toString().trim()){
+            newErrors.slots = 'This is field is required'
+          }
+
+          if(createFormData.price <= 0){
+            newErrors.price= 'price should be above zero'
+          }else if(!createFormData.price.toString().trim()){
+            newErrors.price = 'This is field is required'
           }
 
           setErrors(newErrors);
@@ -254,7 +294,8 @@ const EventTable: React.FC = () => {
         } else {
             try {
                 new URL(editFormData.locationURL);
-              } catch (e) {
+              } catch (error) {
+                console.error(error)
                 newErrors.locationURL = "Invalid URL";
               }          
           }
@@ -271,48 +312,22 @@ const EventTable: React.FC = () => {
     }
 
     const handleSort = (column: keyof EventData) => {
-    let direction: 'asc' | 'desc' = 'asc';
-
-    // Toggle direction if the same column is clicked again
-    if (sortConfig && sortConfig.column === column && sortConfig.direction === 'asc') {
-        direction = 'desc';
-    }
-
-    setSortConfig({ column, direction });
-
-    // Sort userData based on column and direction
-    const sortedData = [...filterData].sort((a, b) => {
-        let aValue: any = a[column];
-        let bValue: any = b[column];
-
-        // Handle date sorting specifically for the createdAt field
-        if (column === 'createdAt') {
-            aValue = new Date(aValue).getTime();
-            bValue = new Date(bValue).getTime();
-        }
-
-        // Sort in ascending or descending order
-        if (aValue < bValue) {
-            return direction === 'asc' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-            return direction === 'asc' ? 1 : -1;
-        }
-        return 0;
-    });
-
-    setFilterData(sortedData);
+        setSortConfig((prev) => {
+            const isSameColumn = prev?.column === column;
+            return {
+                column,
+                direction: isSameColumn && prev?.direction === 'asc' ? 'desc' : 'asc',
+            };
+        });
     };
-
+    
 //filter
     const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-
         const {name, value} = e.target
         setFilterOption((prev) => ({
             ...prev,
             [name]: name === 'status' ? value === '1' : value, // Convert status to boolean
           }));
-
           setErrors({});
     }
 
@@ -320,7 +335,7 @@ const EventTable: React.FC = () => {
 
         e.preventDefault();
         
-        const { startDate, endDate, status } = filterOption;
+        const { startDate, endDate } = filterOption;
         const start = startDate ? new Date(startDate) : null;
         const end = endDate ? new Date(endDate) : null;
         
@@ -328,30 +343,6 @@ const EventTable: React.FC = () => {
             return;
         }
     
-        const filtered = eventData.filter((ev) => {
-            // Clone dates to avoid mutation
-            const contentDate = new Date(ev.createdAt);
-            contentDate.setHours(0, 0, 0, 0);
-    
-            const startClone = start ? new Date(start) : null;
-            const endClone = end ? new Date(end) : null;
-    
-            if (startClone) startClone.setHours(0, 0, 0, 0);
-            if (endClone) endClone.setHours(0, 0, 0, 0);
-    
-          
-            const isWithinDateRange = 
-                (!startClone || contentDate >= startClone) &&
-                (!endClone || contentDate <= endClone);
-    
-            // Check if employee status matches
-            // const isStatusMatch = status === undefined ;
-    
-            return isWithinDateRange //&& isStatusMatch;
-        });
-    
-        setFilterData(filtered);
-        setResult(filtered);
         setFilterModal(false);
         setFilterStatus(true);
     };
@@ -383,31 +374,24 @@ const EventTable: React.FC = () => {
     
     const removeFilter = () => {
         setFilterStatus(false);
-        setFilterData(eventData);
+        setFilterOption({startDate: '', endDate: '', status: undefined})
     }
 
-//pagination
-
-    const paginatedData = result?.slice(
-        (currentPage - 1) * pageSize,
-        currentPage * pageSize
-    );
-
+ //pagination
     const handleNext = () => {
-        if (currentPage < Math.ceil(result.length / pageSize)) {
-            setCurrentPage(currentPage + 1);
+        if (currentPage < Math.ceil(totalPage / pageSize)) {
+            setCurrentPage((prevPage) => prevPage + 1);
         }
     };
 
     const handlePrevious = () => {
         if (currentPage > 1) {
-            setCurrentPage(currentPage - 1);
+            setCurrentPage((prevPage) => prevPage - 1);
         }
     };
 
-
     //img
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         setImages(files) 
         setErrors({})
@@ -484,36 +468,11 @@ const EventTable: React.FC = () => {
         }
       };
 
-      //edit
-      const handleEditClick = (data: EventData) => {
-        setEditFormData(data);
-        setEditModal(true);
-    };
-
-    const handleEditSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (editValidation()) {
-         const response = await handleRequest({
-            url:'/api/admin/events',
-            method:'PATCH',
-            data: editFormData || {},
-        });
-
-        if(response.error){
-            errorToast(response.error)
-        }
-        if(response.data){
-            setEditModal(false)
-            setResult(response.data);
-        }
-        }
-      };
 
   return (
 
-    <div className="relative flex flex-col w-full h-full text-gray-700 bg-white dark:bg-nightBlack dark:text-lightGray  bg-clip-border ">
-        {/* head */}
+        <div className="relative flex flex-col w-full h-full text-gray-700 bg-white dark:bg-nightBlack dark:text-lightGray bg-clip-border">
+            {/* head */}
         <div className="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white dark:bg-nightBlack dark:text-lightGray rounded-none bg-clip-border">
         <div className="flex items-center justify-between gap-8 mb-8">
             <div>
@@ -524,21 +483,14 @@ const EventTable: React.FC = () => {
 
             </div>
             <div className="flex flex-col gap-2 shrink-0 sm:flex-row">
-          { !filterStatus ? 
+          
              <button
                 className="select-none rounded-lg border flex gap-1 dark:text-lightGray dark:border-lightGray  border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-                type="button" onClick={() => setFilterModal(true)}>
-                 <SlidersHorizontal size={10}/>
-                Filter
+                type="button" onClick={ !filterStatus ? () => setFilterModal(true) : removeFilter}>
+                 <SlidersHorizontal size={15}/>
+                 { !filterStatus ?  "Filter" : 'Remove'}
              </button>
-            :
-            <button
-            className="select-none rounded-lg border flex gap-1 dark:text-lightGray dark:border-lightGray  border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-            type="button" onClick={removeFilter}>
-             <SlidersHorizontal size={10}/>
-            Remove
-           </button>
-         }
+ 
             <button
                 className="flex select-none items-center gap-3 rounded-lg dark:text-darkGray dark:bg-lightGray bg-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-white shadow-md shadow-gray-900/10 transition-all hover:shadow-lg hover:shadow-gray-900/20 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
                 type="button" onClick={() => setCreateModal(true)} >
@@ -558,7 +510,7 @@ const EventTable: React.FC = () => {
                     <Search size={18} />
                 </div>
                     <input
-                        className="peer h-full w-full rounded-[7px] border border-blue-gray-200 dark:border-gray-600 border-t-transparent bg-transparent dark:bg-gray-800 px-3 py-2.5 !pr-9 font-sans text-sm font-normal text-blue-gray-700 dark:text-gray-200 outline outline-0 transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 dark:placeholder-shown:border-gray-600 dark:placeholder-shown:border-t-gray-600 focus:border-2 focus:border-gray-900 dark:focus:border-gray-400 focus:border-t-transparent dark:focus:border-t-transparent focus:outline-0 disabled:border-0 disabled:bg-blue-gray-50 dark:disabled:bg-gray-700"
+                        className="peer h-full w-full rounded-[7px] border border-blue-gray-200 dark:border-gray-600 border-t-transparent bg-transparent dark:bg-darkGray px-3 py-2.5 !pr-9 font-sans text-sm font-normal text-blue-gray-700 dark:text-gray-200 outline outline-0 transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 dark:placeholder-shown:border-gray-600 dark:placeholder-shown:border-t-gray-600 focus:border-2 focus:border-gray-900 dark:focus:border-gray-400 focus:border-t-transparent dark:focus:border-t-transparent focus:outline-0 disabled:border-0 disabled:bg-blue-gray-50 dark:disabled:bg-gray-700"
                         placeholder=" "
                         onChange={(e) => setSearchValue(e.target.value)}
                     />
@@ -572,323 +524,186 @@ const EventTable: React.FC = () => {
             </div>
         </div>
         </div>
-
-        {/* table */}
-        <div className="p-6 px-0 overflow-scroll overflow-x-hidden overflow-y-hidden">
-        <table className="w-full mt-4 text-left table-auto min-w-max">
-            <thead className='text-center'>
-            <tr >
-            <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                    ID
-                    <ChevronsUpDown size={13} onClick={() => handleSort('_id')}/>
-                </p>
+        
+    {result.length ? (  
+            <>
+            <DataTable
+            columns={columns}
+            data={result}
+            onSort={handleSort}
+            onDelete={handleDelete}
+            onEdit={handleEditClick}
+            currentPage={currentPage}
+            pageSize={pageSize}
+            totalPage={totalPage}
+            handleNext={handleNext}
+            handlePrevious={handlePrevious}
+            />
+       {/* <div className="p-6 px-0 overflow-x-auto">
+        <table className="w-full mt-4 text-left border-collapse rounded-lg shadow-md overflow-hidden">
+            <thead className="bg-gray-100 dark:bg-darkGray text-gray-800 dark:text-gray-300 text-sm tracking-wider">
+            <tr>
+            {['ID', 'Title', 'Description', 'Location', 'Images', 'Event Date', 'Created At', 'Action'].map((header, index) => (
+                <th key={index} className="p-4 border-b border-gray-300 dark:border-gray-700 text-center cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+                    onClick={() => 
+                        ['ID', 'Title', 'Description', 'Location', 'Event Date', 'Created At'].includes(header) ? handleSort(columnMap[header]) : null
+                    }>
+                    <div className="flex items-center justify-center gap-2">
+                        {header}
+                        {['ID', 'Title', 'Description', 'Location', 'Event Date', 'Created At'].includes(header) && <ChevronsUpDown size={14} />}
+                    </div>
                 </th>
-                <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                    Title
-                    <ChevronsUpDown size={13} onClick={() => handleSort('title')}/>
-                </p>
-                </th>
-                <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                    Description
-                    <ChevronsUpDown size={13} onClick={() => handleSort('description')}/>
-                </p>
-                </th>
-                
-                <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                        Location
-                    <ChevronsUpDown size={13}/>
-                </p>
-                </th>
-                <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                     Images
-                </p>
-                </th>
-                <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                     Event Date
-                </p>
-                </th>
-                <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                    Created At
-                    <ChevronsUpDown size={13} onClick={() => handleSort('createdAt')}/>
-                </p>
-                </th>
-                <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                  <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                    Action
-                </p>
-                </th>
+            ))}
             </tr>
             </thead>
 
-            <tbody>
-
-            {paginatedData?.map((value, index) => {
-            return(
-            <tr key={index}>
-            <td className="p-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex flex-col">
-                    <p
-                        className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900 opacity-70">
-                        {value._id.split('').slice(7,16).join("")}
-                    </p>
-                    </div>
-                </div>
+            <tbody className="text-gray-800 dark:text-gray-200 text-sm">
+            {result?.map((value, index) => (
+            <tr key={index} className="border-b border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-darkGray transition-all">
+                <td className="p-4 text-center font-medium">{value._id.slice(7, 16)}</td>
+                <td className="p-4 text-center truncate max-w-[150px]">{value.title}</td>
+                <td className="p-4 text-center truncate max-w-[200px]">{value.description}</td>
+                <td className="p-4 text-center">
+                    <p>{value.location}</p>
+                    <a href={value.locationURL} target='_blank' className='font-bold text-blue-500 hover:underline'>View</a>
                 </td>
-                <td className="p-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex flex-col">
-                    <p className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                        {value.title}
-                    </p>
-
-                    </div>
-                </div>
+                <td className="p-4 text-center">
+                    <img src={value.image[0]} alt="event" className='w-10 h-10 rounded-md'/>
                 </td>
-
-                <td className="p-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex flex-col">
-                    <p className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                        {value.description}
-                    </p>
-
-                    </div>
-                </div>
+                <td className="p-4 text-center">
+                    {new Date(value.eventDate).setHours(0,0,0,0) < new Date().setHours(0,0,0,0) ? 'Expired' : new Date(value.eventDate).toLocaleDateString()}
                 </td>
-                <td className="p-4">
-                 <div className="flex items-center gap-3">
-                    <div className="flex flex-col">
-                    <p className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                        {value.location}
-                    </p>
-                    <a href={value.locationURL} target='blank' className='font-bold'>view</a>
-                    </div>
-                 </div>
+                <td className="p-4 text-center">{new Date(value.createdAt).toLocaleDateString()}</td>
+                <td className="p-4 flex justify-center gap-3">
+                    <button className="px-4 py-1.5 text-xs font-semibold uppercase border rounded-lg transition-all dark:border-gray-500 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                        onClick={() => handleDelete(value._id)}>
+                        Delete
+                    </button>
+                    <button className='ml-3' onClick={() => handleEditClick(value)}>
+                        <Pencil size={18} />
+                    </button>
                 </td>
-                <td className="p-4">
-                 <div className="flex items-center gap-3">
-                    <div className="flex flex-col">
-                    <p className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                        <img src={value.image[0]} alt="" className='w-10 h-10'/>
-                    </p>
-
-                    </div>
-                 </div>
-                </td>
-                <td className="p-4">
-                <p className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                    {new Date(value.eventDate).setHours(0,0,0,0) < new Date().setHours(0,0,0,0) ? 'expired': new Date(value.eventDate).toLocaleDateString()}
-                </p>
-                
-                </td>
-
-                <td className="p-4">
-                <p className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                    {new Date(value.createdAt).toLocaleDateString()}
-                </p>
-                
-                </td>
-                <td className="p-4">
-                <button
-                    className="relative ml-2 h-10 max-h-[40px] w-24 max-w-[70px] select-none rounded-lg text-center align-middle font-sans text-xs font-medium uppercase text-gray-900 transition-all hover:bg-gray-900/10 active:bg-gray-900/20 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none border dark:border-lightGray dark:bg-lightGray dark:text-darkGray "
-                    type="button"
-                    onClick={() => handleDelete(value._id)}
-                    >
-                        <span className="absolute  transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2 dark:text-darkGray">
-                            Delete
-                        </span>
-                </button>
-                <button className='ml-3'
-                onClick={() =>handleEditClick(value)}
-                >
-                    <Pencil size={18}/>
-                </button>
-             </td>
             </tr>
-            )
-            })}
+            ))}
             </tbody>
         </table>
         </div>
 
-        {/* bottom */}
-        <div className="flex items-center justify-between p-4 border-t border-blue-gray-50">
+        <div className="flex items-center justify-between p-4  border-blue-gray-50">
             <p className="text-sm">
-                Page {currentPage} of {Math.ceil(result.length / pageSize)}
+                Page {currentPage} of {Math.ceil(totalPage / pageSize)}
             </p>
             <div className="flex gap-2">
                 <button 
                     onClick={handlePrevious} 
                     disabled={currentPage === 1}
-                    className="select-none rounded-lg border border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+                    className="select-none rounded-lg border dark:text-gray-50 dark:border-gray-50 border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
                     >
                     Previous
                 </button>
                 <button
                     onClick={handleNext}
-                    disabled={currentPage >= Math.ceil(result.length / pageSize)}
-                    className="select-none rounded-lg border border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+                    disabled={currentPage >= Math.ceil(totalPage / pageSize)}
+                    className="select-none rounded-lg border dark:text-gray-50 dark:border-gray-50 border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
                     >  
                     Next
                 </button>
             </div>
-       </div>
+       </div> */}
+       </>
+    ):<NoContent message='No events scheduled'/>}
 
         {/* modalCreateEmployee */}
         {createModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div className="bg-white p-4 rounded-md shadow-lg max-w-md">
-                <h1 className="text-center text-xl font-semibold">Create Event</h1>
-                <form className="mx-auto max-w-xs flex flex-col gap-4" onSubmit={handleSubmit}>
+            <div className="fixed inset-0 z-50 flex min-h-screen items-center justify-center p-4 bg-black bg-opacity-50">
+            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-md w-full border dark:border-gray-700 max-h-[80vh] overflow-y-auto scrollable-container">
+                <h1 className="text-center text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+                Create Event
+                </h1>
 
-                    <div className="mt-1">
-                    <div className="flex flex-col">
-                        <input
-                        type="text"
-                        name="title"
-                        placeholder="Enter title"
-                        className="border p-1 rounded-md"
+                <form className="mx-auto flex flex-col gap-4" onSubmit={handleSubmit}>
+                {/* Input Fields */}
+                {[
+                    { name: "title", placeholder: "Enter title" },
+                    { name: "location", placeholder: "Enter location" },
+                    { name: "locationURL", placeholder: "Enter location URL" },
+                    { name: "eventDate", type: "date" },
+                    { name: "slots", placeholder: "Enter number of slots", type: "number" },
+                    { name: "price", placeholder: "Enter price", type: "number" }
+                ].map(({ name, placeholder, type = "text" }) => (
+                    <div key={name}>
+                    <input
+                        type={type}
+                        name={name}
+                        placeholder={placeholder}
+                        className="w-full border p-2 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white transition"
                         onChange={handleChange}
-                        />
-                        {errors && errors.title && (
-                        <span className="text-red-500 text-sm mt-1">{errors.title}</span>
-                        )}
-                    </div>
-                    </div>
-
-                    <div className="mt-1">
-                    <div className="flex flex-col">
-                        <input
-                        type="text"
-                        name="location"
-                        placeholder="Enter location"
-                        className="border p-1 rounded-md"
-                        onChange={handleChange}
-                        />
-                        {errors && errors.location && (
-                        <span className="text-red-500 text-sm mt-1">{errors.location}</span>
-                        )}
-                    </div>
-                    </div>
-
-                    <div className="mt-1">
-                    <div className="flex flex-col">
-                        <input
-                        type="text"
-                        name="locationURL"
-                        placeholder="Enter locationURL"
-                        className="border p-1 rounded-md"
-                        onChange={handleChange}
-                        />
-                        {errors && errors.locationURL && (
-                        <span className="text-red-500 text-sm mt-1">{errors.locationURL}</span>
-                        )}
-                    </div>
-                    </div>
-
-                    <div className="mt-1">
-                    <div className="flex flex-col">
-                        <input
-                        type="date"
-                        name="eventDate"
-                        placeholder="Enter eventDate"
-                        className="border p-1 rounded-md"
-                        onChange={handleChange}
-                        />
-                        {errors && errors.eventDate && (
-                        <span className="text-red-500 text-sm mt-1">{errors.eventDate}</span>
-                        )}
-                    </div>
-                    </div>
-
-                    <div className="mt-1">
-                    <div className="flex flex-col">
-                        <textarea
-                        name="description"
-                        placeholder="write description"
-                        className="border p-1 rounded-md"
-                        onChange={handleChange}
-                        />
-                        {errors && errors.description && (
-                        <span className="text-red-500 text-sm mt-1">{errors.description}</span>
-                        )}
-                    </div>
-                    </div>
-
-                    <div className="flex flex-col items-center justify-center">
-                    <div className="flex flex-wrap gap-2 mt-4">
-                        {imagePreviews.map((preview, index) => (
-                        <div key={index} className="relative" onDoubleClick={() => handleImageClick(index)}>
-                            <img
-                            src={preview}
-                            alt={`Preview ${index}`}
-                            className="w-16 h-16 object-cover rounded-md"
-                            />
-                            <button
-                            className="absolute top-0 right-0 bg-customPink text-white text-center rounded-full h-5 w-5 hover:bg-red-600 flex items-end justify-center"
-                            onClick={() => handleImageRemove(index)}
-                            >
-                            <span>x</span>
-                            </button>
-                        </div>
-                        ))}
-                    {/* </div> */}
-                    <label htmlFor="file-upload" className="w-16 h-16 bg-gray-300 rounded-md flex items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-400 transition-all">
-                        <Plus/>
-                    </label>
-                    {errors.image && <span className='text-red-500'>{errors.image}</span>}
-                    <input 
-                    id="file-upload" 
-                    name='image' 
-                    type="file"
-                    className="hidden" 
-                    onChange={handleImageUpload}
                     />
-
+                    {errors?.[name as keyof Errors] && <span className="text-red-500 text-xs">{errors[name as keyof Errors]}</span>}
                     </div>
-                    <p className="text-xs text-gray-500 text-center dark:text-gray-400"> Upload Image<br></br>
-                        Double click to resize the image
-                    </p>
-                    </div>
+                ))}
 
-                    <div className="mt-1 flex justify-center">
-                    <button className="border p-1 rounded-md shadow-md" type="submit">
-                        Create
+                {/* Description */}
+                <div>
+                    <textarea
+                    name="description"
+                    placeholder="Write description"
+                    className="w-full border p-2 rounded-md focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white transition"
+                    rows={3}
+                    onChange={handleChange}
+                    />
+                    {errors?.description && <span className="text-red-500 text-xs">{errors.description}</span>}
+                </div>
+
+                {/* Image Upload */}
+                <div className="flex flex-wrap gap-2 mt-3 justify-center">
+                    {imagePreviews.map((preview, index) => (
+                    <div key={index} className="relative group">
+                        <img
+                        src={preview}
+                        alt={`Preview ${index}`}
+                        className="w-16 h-16 object-cover rounded-md border-2 border-gray-300 dark:border-gray-700 shadow-md"
+                        />
+                        <button
+                        type="button"
+                        className="absolute top-0 right-0 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                        onClick={() => handleImageRemove(index)}
+                        >
+                        ✕
+                        </button>
+                    </div>
+                    ))}
+                    <label
+                    htmlFor="file-upload"
+                    className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-md flex items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600 transition-all shadow-md"
+                    >
+                    +
+                    </label>
+                    <input id="file-upload" name="image" type="file" className="hidden" onChange={handleImageUpload} />
+                </div>
+                <p className="text-xs text-gray-500 text-center dark:text-gray-400">
+                    Upload Image <br /> Double click to resize the image
+                </p>
+                {errors?.image && <span className="text-red-500">{errors.image}</span>}
+
+                {/* Buttons */}
+                <div className="flex justify-center gap-3 mt-4">
+                    <button
+                    type="submit"
+                    className="bg-black text-white px-4 py-2 rounded-md hover:bg-slate-900 transition focus:ring-2 focus:ring-blue-400 text-sm"
+                    >
+                    Create
                     </button>
                     <button
-                        className="border p-1 rounded-md ml-2 bg-darkGray text-white"
-                        type="button"
-                        onClick={handleCancel}
+                    type="button"
+                    className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition focus:ring-2 focus:ring-gray-300 text-sm"
+                    onClick={handleCancel}
                     >
-                        Cancel
+                    Cancel
                     </button>
-                    </div>
-                </form>
                 </div>
+                </form>
+            </div>
             </div>
         )}
 
@@ -921,161 +736,193 @@ const EventTable: React.FC = () => {
 
         {/* modalFilter */}
         {filterModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-white p-4 rounded-md shadow-lg max-w-md">
-                <h1 className="text-center text-xl font-semibold">Filter</h1>
-                <form className="mx-auto max-w-xs flex flex-col gap-4" onSubmit={handleFilter}>
-                
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity">
+            <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg transform transition-transform scale-95 w-full max-w-md border dark:border-gray-700">
+            <h1 className="text-center text-xl font-semibold text-gray-900 dark:text-white">Filter</h1>
+
+            <form className="mx-auto max-w-xs flex flex-col gap-4" onSubmit={handleFilter}>
                 {/* Date Range Input */}
-                <div className="flex flex-col mt-1">
-                    <label className="text-sm font-semibold">Start Date</label>
-                    <input
+                <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
+                <input
                     type="date"
                     name="startDate"
-                    className="border p-1 rounded-md"
+                    className="border rounded-md px-3 py-2 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
                     onChange={handleFilterChange}
-                    />
+                />
                 </div>
-                <div className="flex flex-col mt-1">
-                    <label className="text-sm font-semibold">End Date</label>
-                    <input
+
+                <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
+                <input
                     type="date"
                     name="endDate"
-                    className="border p-1 rounded-md"
+                    className="border rounded-md px-3 py-2 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
                     onChange={handleFilterChange}
-                    />
-                    {errors && <span className='text-red-500'>{errors.date}</span>}
+                />
+                {errors?.date && <span className="text-red-500 text-sm">{errors.date}</span>}
                 </div>
-                
-
-                {/* Status Input */}
-                {/* <div className="mt-2 flex flex-col">
-                    <label className="text-sm font-semibold">Status</label>
-                    <select
-                    name="status"
-                    className="border p-1 rounded-md"
-                    onChange={handleFilterChange}
-                    >
-                    <option value="">Select Status</option>
-                    <option value="-1">Unlisted</option>
-                    <option value="1">Listed</option>
-                    </select>
-                </div> */}
 
                 {/* Action Buttons */}
-                <div className="mt-1 flex justify-center">
-    
-                    <button className="border p-1 rounded-md shadow-md" type="submit">
-                    Apply
-                    </button>
-                
-                    <button
-                    className="border p-1 rounded-md ml-2 bg-darkGray text-white"
-                    type="button"
-                    onClick={() => setFilterModal(false)}
-                    >
-                    Cancel
-                    </button>
-                </div>
-                </form>
-            </div>
-            </div>
-        )}
-
-
-      {editModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity">
-            <div className="bg-white p-6 rounded-lg shadow-lg transform transition-transform scale-95">
-            <h2 className="text-lg font-bold mb-4 text-darkGray">Edit Advertisement</h2>
-            <form onSubmit={handleEditSubmit}>
-                <div className="mb-4">
-                <label className="block text-sm font-medium mb-1 text-nightBlack">title</label>
-                <input
-                    type="text"
-                    name='title'
-                    value={editFormData?.title || ''}
-                    onChange={(e) =>
-                    setEditFormData((prev) => prev && { ...prev, title: e.target.value })
-                    }
-                    className="w-full border rounded-md px-3 py-2 text-darkGray"
-                    required
-                />
-                {errors.title && <span className='text-red-500'>{errors.title}</span>}
-
-                <label className="block text-sm font-medium mb-1 text-nightBlack">location</label>
-                <input
-                    type="text"
-                    name='location'
-                    value={editFormData?.location || ''}
-                    onChange={(e) =>
-                    setEditFormData((prev) => prev && { ...prev, location: e.target.value })
-                    }
-                    className="w-full border rounded-md px-3 py-2 text-darkGray"
-                    required
-                />
-                {errors.location && <span className='text-red-500'>{errors.location}</span>}
-                <label className="block text-sm font-medium mb-1 text-nightBlack">locationURL</label>
-                <input
-                    type="text"
-                    name='locationURL'
-                    value={editFormData?.locationURL || ''}
-                    onChange={(e) => 
-                        setEditFormData((prev) => prev && { ...prev, locationURL: e.target.value })
-                     }
-                    className="w-full border rounded-md px-3 py-2 text-darkGray"
-                    required
-                />
-                {errors.locationURL && <span className='text-red-500'>{errors.locationURL}</span>}
-                <label className="block text-sm font-medium mb-1 text-nightBlack"></label>
-                <input
-                    type="date"
-                    name="eventDate"
-                    value={
-                        editFormData?.eventDate 
-                            ? new Date(editFormData.eventDate).toISOString().split('T')[0] 
-                            : ''
-                    }
-                    onChange={(e) =>
-                        setEditFormData((prev) => prev && { ...prev, eventDate: e.target.value })
-                    }
-                    className="w-full border rounded-md px-3 py-2 text-darkGray"
-                    required
-                />
-                {errors.eventDate && <span className='text-red-500'>{errors.eventDate}</span>}
-                <label className="block text-sm font-medium mb-1 text-nightBlack">description</label>
-                <input
-                    type="text"
-                    name='description'
-                    value={editFormData?.description || ''}
-                    onChange={(e) =>
-                    setEditFormData((prev) => prev && { ...prev, description: e.target.value })
-                    }
-                    className="w-full border rounded-md px-3 py-2 text-darkGray"
-                    required
-                />
-                </div>
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-3">
                 <button
                     type="submit"
-                    className="px-4 py-2 bg-customPink text-white rounded-md"
+                    className="px-4 py-2 bg-black text-white rounded-md hover:bg-slate-900 transition focus:ring-2 focus:ring-blue-400 text-sm"
                 >
-                    Save
+                    Apply
                 </button>
+
                 <button
                     type="button"
-                    onClick={() => setEditModal(false)}
-                    className="px-4 py-2 bg-lightGray rounded-md"
+                    onClick={() => setFilterModal(false)}
+                    className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition focus:ring-2 focus:ring-gray-300 text-sm"
                 >
                     Cancel
                 </button>
-
                 </div>
             </form>
             </div>
         </div>
         )}
 
+        {editModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity">
+            <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg transform transition-transform scale-95 w-full max-w-md border dark:border-gray-700">
+            <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Edit Advertisement</h2>
 
+            <form onSubmit={handleEditSubmit}>
+                <div className="space-y-4">
+                {/* Title Input */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
+                    <input
+                    type="text"
+                    name="title"
+                    value={editFormData?.title || ""}
+                    onChange={(e) =>
+                        setEditFormData((prev) => prev && { ...prev, title: e.target.value })
+                    }
+                    className="w-full border rounded-md px-3 py-2 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
+                    required
+                    />
+                    {errors.title && <span className="text-red-500 text-sm">{errors.title}</span>}
+                </div>
+
+                {/* Location Input */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Location</label>
+                    <input
+                    type="text"
+                    name="location"
+                    value={editFormData?.location || ""}
+                    onChange={(e) =>
+                        setEditFormData((prev) => prev && { ...prev, location: e.target.value })
+                    }
+                    className="w-full border rounded-md px-3 py-2 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
+                    required
+                    />
+                    {errors.location && <span className="text-red-500 text-sm">{errors.location}</span>}
+                </div>
+
+                {/* Location URL Input */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Location URL</label>
+                    <input
+                    type="text"
+                    name="locationURL"
+                    value={editFormData?.locationURL || ""}
+                    onChange={(e) =>
+                        setEditFormData((prev) => prev && { ...prev, locationURL: e.target.value })
+                    }
+                    className="w-full border rounded-md px-3 py-2 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
+                    required
+                    />
+                    {errors.locationURL && <span className="text-red-500 text-sm">{errors.locationURL}</span>}
+                </div>
+
+                {/* Event Date Input */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Event Date</label>
+                    <input
+                    type="date"
+                    name="eventDate"
+                    value={editFormData?.eventDate ? new Date(editFormData.eventDate).toISOString().split("T")[0] : ""}
+                    onChange={(e) =>
+                        setEditFormData((prev) => prev && { ...prev, eventDate: e.target.value })
+                    }
+                    className="w-full border rounded-md px-3 py-2 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
+                    required
+                    />
+                    {errors.eventDate && <span className="text-red-500 text-sm">{errors.eventDate}</span>}
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Slots</label>
+                    <input
+                        type="number"
+                        name="slots"
+                        value={editFormData?.slots}
+                        onChange={(e) =>
+                            setEditFormData((prev) => prev && { ...prev, slots: Number(e.target.value) })
+                        }
+                        className="w-full border rounded-md px-3 py-2 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
+                        required
+                    />
+                    {errors.slots && <span className="text-red-500 text-sm">{errors.slots}</span>}
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Price</label>
+                    <input
+                        type="number"
+                        name="price"
+                        value={editFormData?.price}
+                        onChange={(e) =>
+                            setEditFormData((prev) => prev && { ...prev, price: Number(e.target.value) })
+                        }
+                        className="w-full border rounded-md px-3 py-2 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
+                        required
+                    />
+                    {errors.price && <span className="text-red-500 text-sm">{errors.price}</span>}
+                </div>
+
+                {/* Description Input */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                    <input
+                    type="text"
+                    name="description"
+                    value={editFormData?.description || ""}
+                    onChange={(e) =>
+                        setEditFormData((prev) => prev && { ...prev, description: e.target.value })
+                    }
+                    className="w-full border rounded-md px-3 py-2 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
+                    required
+                    />
+                </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-end gap-3 mt-4">
+                <button
+                    type="submit"
+                    className="px-4 py-2 bg-black text-white rounded-md hover:bg-slate-900 transition focus:ring-2 focus:ring-blue-400 text-sm"
+                >
+                    Save
+                </button>
+
+                <button
+                    type="button"
+                    onClick={() => setEditModal(false)}
+                    className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition focus:ring-2 focus:ring-gray-300 text-sm"
+                >
+                    Cancel
+                </button>
+                </div>
+            </form>
+            </div>
+        </div>
+        )}
     </div>
   
   )

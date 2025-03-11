@@ -1,74 +1,101 @@
-'use client'
-
-import { useEffect, useState } from "react";
-import useAxios from "@/hooks/useAxios/useAxios";
+"use client";
+import { useEffect, useRef } from "react";
+import useAxios from "@/hooks/axiosHooks/useAxios";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-interface Location {
-    latitude: number,
-    longitude: number,
+import { errorToast, infoToast } from "@/utils/toasts/toast";
+import axios from "axios";
+
+interface Props {
+  onLocationFetched?: (success: boolean) => void;
 }
-const GeolocationComponent = () => {
-  const [location, setLocation] = useState<Location>({latitude:0, longitude:0});
-  const [error, setError] = useState("");
-  const {handleRequest} = useAxios()
-  
-  const user = useSelector((state: RootState) => state.user.userInfo)
+
+const LocationFetcher: React.FC<Props> = ({ onLocationFetched }) => {
+const hasShownToast = useRef(false);
+
+  const {handleRequest} = useAxios();
+
+  const userId = useSelector((state: RootState) => state.user.userInfo?.id)
 
   useEffect(() => {
-    console.log('calling api');
-    getGeoloaction();
-  },[location]);
 
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setLocation({ latitude, longitude });
-        },
-        (err) => setError(err.message),
-        { enableHighAccuracy: true }
-      );
-    } else {
-      setError("Geolocation is not supported by this browser.");
+    const savedLocation = localStorage.getItem("userLocation");
+
+    if (savedLocation) {
+      onLocationFetched?.(true);
+      return;
+    };
+
+    if (!("geolocation" in navigator)) {
+      errorToast('Geolocation is not supported by this browser');
+      onLocationFetched?.(false);
+      return;
     }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const response = await axios({
+            url: `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+            method: 'GET',
+            withCredentials: false
+          });
+         
+          const address = response.data.address;
+          const formattedLocation = {
+            latitude,
+            longitude,
+            city: address.city || address.town || address.village || "Unknown",
+            state: address.state || "Unknown",
+            country: address.country || "Unknown",
+          };
+
+    
+
+          localStorage.setItem("userLocation", JSON.stringify(formattedLocation));
+
+          await sendLocationToBackend(formattedLocation);
+          onLocationFetched?.(true);
+        } catch (err) {
+          console.error(err)
+          errorToast('Failed to fetch address')
+          onLocationFetched?.(false);
+        }
+      },
+      (err) => {
+        if (!hasShownToast.current) {
+          infoToast("Location access is required");
+          hasShownToast.current = true; // Mark as shown
+        }
+        onLocationFetched?.(false);
+        console.error(err)
+      }
+    );
   }, []);
 
-  const getGeoloaction = async () => {
-    // try {
-    //     const response = await handleRequest({
-    //         url:'/api/user/reverse-geocode',
-    //         method:'POST',
-    //         data:{
-    //             location,
-    //             id: user?.id
-    //         }
-    //     });
-    //     if(response.error){
-    //         console.log(response.error)
-    //     }
+  const sendLocationToBackend = async (locationData: any) => {
+    try {
+      const response = await handleRequest({
+        url:'/api/user/update_location',
+        method:'POST',
+        data: {locationData, userId },
+      })
+      if(response.error){
+        console.error(response.error);
+        errorToast('falied to save location')
+      }
+      if(response.data){
+        
+        console.log("Location saved to DB");
+      }
+    } catch (error) {
+      errorToast("Failed to save location to server")
+      console.error("Error sending location:", error);
+    }
+  };
 
-    //     if(response.data){
-    //         console.log(response.data);
-    //     };
-    // } catch (error) {
-    //     console.log('something happend in getGeolocation')
-    // }
-  }
-
-
-  return (
-    <div>
-      {/* {location ? (
-        <p>
-          Latitude: {location.latitude}, Longitude: {location.longitude}
-        </p>
-      ) : (
-        <p>{error || "Fetching location..."}</p>
-      )} */}
-    </div>
-  );
+  return  null
 };
 
-export default GeolocationComponent;
+export default LocationFetcher;

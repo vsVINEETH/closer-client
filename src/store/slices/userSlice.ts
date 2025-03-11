@@ -1,6 +1,13 @@
 "use client";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
+interface Preferences {
+  interestedIn?: string;
+  ageRange?: [number, number];
+  distance?: number;
+  lookingFor?: string;
+};
+
 interface UserState {
   isAuthenticated: boolean;
   userInfo: {
@@ -19,6 +26,7 @@ interface UserState {
       startDate: string,
       endDate: string,
     } | null
+    preferences?: Preferences | null,
   } | null;
 }
 
@@ -83,8 +91,13 @@ const userSlice = createSlice({
       if (state.userInfo && state.userInfo.prime) {
         state.userInfo.prime = {
           ...state.userInfo.prime,
-          ...action.payload, // Update only prime details
+          ...action.payload,
         };
+      }
+    },
+    updatePreferences: (state, action: PayloadAction<Preferences>) => {
+      if (state.userInfo) {
+        state.userInfo.preferences = action.payload;
       }
     },
     logout: (state) => {
@@ -94,5 +107,5 @@ const userSlice = createSlice({
   },
 });
 
-export const { login, logout, updateStatus, updatePrimeStatus } = userSlice.actions;
+export const { login, logout, updateStatus, updatePrimeStatus, updatePreferences } = userSlice.actions;
 export default userSlice.reducer;

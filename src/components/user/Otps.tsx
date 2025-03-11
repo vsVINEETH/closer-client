@@ -17,7 +17,6 @@ const Otps: React.FC<OtpProps> = ({
   onResend,
   onSubmit,
   errorMessage = "Something went wrong. Please try again.",
-  successMessage = "OTP validated successfully",
 }) => {
   const [otp, setOtp] = useState<string[]>(Array(otpLength).fill(""));
   const [errors, setErrors] = useState<string | null>(null);

@@ -1,9 +1,12 @@
 'use client'
 import React, {useState, useEffect} from 'react';
-import { ChevronsUpDown, SlidersHorizontal, UserPlus, Search } from 'lucide-react';
-import useAxios from '@/hooks/useAxios/useAxios';
-import { errorToast, successToast } from '@/utils/toasts/toats';
-import { Pencil } from 'lucide-react';
+import { SlidersHorizontal, UserPlus, Search } from 'lucide-react';
+import { errorToast, successToast } from '@/utils/toasts/toast';
+import { createConfirm, editConfirm, listUnlistConfirm } from '@/utils/sweet_alert/sweetAlert';
+import { useCategoryCrud } from '@/hooks/crudHooks/employee/useCategoryCrud';
+import { useFetch } from '@/hooks/fetchHooks/useEmployeFetch';
+import NoContent from '../reusables/NoContent';
+import DataTable from '../reusables/Table';
 
 interface CategoryData {
     id: string,
@@ -25,26 +28,34 @@ interface FilterOption {
 interface Errors {
     name?: string,
     date?: string,
-}
+};
+
+const columns = [
+    { key: "id", label: "ID", sortable: true },
+    { key: "name", label: "Category Name", sortable: true },
+    { key: "isListed", label: "Status", sortable: false, render:(item: CategoryData ) => (item.isListed ? "Listed" : "Unlisted") },
+    { key: "createdAt", label: "Created At", sortable: true },
+  ];
 
 const CategoryTable: React.FC = () => {
     const [categoryData, setCategoryData] = useState<CategoryData[]>([]);
-    const [createModal, setCreateModal] = useState<Boolean>(false);
+    const [createModal, setCreateModal] = useState<boolean>(false);
     const [createFormData, setCreateFormData] = useState<createFormData>({name: ''});
     const [errors, setErrors] = useState<Errors>({});
-    const {handleRequest} = useAxios()
+
+    const {createCategory, controllCategoryListing, editCategory} = useCategoryCrud();
+    const {getCategoryData} = useFetch();
 
     const [searchValue, setSearchValue] = useState<string>('');
     const [sortConfig, setSortConfig] = useState<{ column: keyof CategoryData; direction: 'asc' | 'desc' } | null>(null);
-
-    const [filterModal, setFilterModal] = useState<Boolean>(false);
     const [filterOption, setFilterOption] = useState<FilterOption>({startDate: '', endDate: '', status: undefined});
-    const [filterData, setFilterData] = useState<CategoryData[]>([]);
-    const [filterStatus, setFilterStatus] = useState<Boolean>(false);
+
+    const [filterModal, setFilterModal] = useState<boolean>(false);
+    const [filterStatus, setFilterStatus] = useState<boolean>(false);
 
     const [currentPage, setCurrentPage] = useState<number>(1);
-    const [pageSize, setPageSize] = useState<number>(2);
-
+    const [pageSize] = useState<number>(2);
+    const [totalPage, setTotal] = useState<number>(0);
     const [result, setResult] = useState<CategoryData[]>([]);
 
     const [editModal, setEditModal] = useState<boolean>(false);
@@ -53,38 +64,58 @@ const CategoryTable: React.FC = () => {
 
     useEffect(() => {
         fetchData();
-    },[]);
-
-    useEffect(() => {
-       setResult(
-          searchValue ? filterData.filter(category =>
-            category.name.toLowerCase().includes(searchValue.toLowerCase()) 
-          ): filterData
-        )
-    },[searchValue, filterData]);
+    }, [searchValue, filterOption, currentPage, pageSize, sortConfig]);
 
 
     const fetchData = async () => {
         try {
-            const response = await handleRequest({
-                url:'/api/employee/category_data',
-                method:'GET'
+            const response = await getCategoryData({
+                search: searchValue || '',
+                startDate: filterOption.startDate || '',
+                endDate: filterOption.endDate || '',
+                status: filterOption.status,
+                sortColumn: sortConfig?.column || 'createdAt',
+                sortDirection: sortConfig?.direction || 'asc',
+                page: currentPage,
+                pageSize: pageSize,
             })
-
-            if(response.error){
-                errorToast(response.error)
-            }
 
             if(response.data){
                 const data = response.data;
-                console.log(data);
-                setCategoryData(data);
-                setFilterData(data);
-                setResult(data);
+                setCategoryData(data.category);
+                setResult(data.category);
+                setTotal(data.total)
             }
             
         } catch (error) {
             errorToast(error);
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if(validation()){
+            const confirm = await createConfirm();
+            if(!confirm){return};
+            const response = await createCategory(createFormData)
+
+            if(response.data){
+                setCreateModal(false);
+                fetchData()
+                successToast('successfully created');
+            }
+        }
+
+    }
+
+    const handleListing = async (categoryId: string, index: number) => {
+        const confirm = await listUnlistConfirm(!categoryData[index].isListed);
+        if(!confirm){return}
+        const response = await controllCategoryListing(categoryId)
+
+        if(response.data){
+            setResult(response.data);
+            successToast(response.data)
         }
     }
 
@@ -97,52 +128,9 @@ const CategoryTable: React.FC = () => {
         setErrors({})
     }
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if(validation()){
-            console.log(createFormData)
-            const response = await handleRequest({
-                url:'/api/employee/create_category',
-                method:'POST',
-                data: createFormData
-            });
-
-            if(response.error){
-                errorToast(response.error)
-            }
-            if(response.data){
-                setCreateModal(false);
-                fetchData()
-                successToast('successfully created');
-            }
-        }
-
-    }
-
     const handleCancel = () => {
         setCreateModal(false);
         setErrors({});
-    }
-
-    const handleListing = async (id: string) => {
-        const response = await handleRequest({
-            url:'/api/employee/list_category',
-            method:'POST',
-            data:{
-                id: id
-            }
-        })
-
-        if(response.error){
-            errorToast(response.error)
-            
-        }
-
-        if(response.data){
-            setResult(response.data);
-            successToast(response.data)
-        }
-
     }
 
     const validation = () => {
@@ -168,42 +156,17 @@ const CategoryTable: React.FC = () => {
     }
 
     const handleSort = (column: keyof CategoryData) => {
-    let direction: 'asc' | 'desc' = 'asc';
-
-    // Toggle direction if the same column is clicked again
-    if (sortConfig && sortConfig.column === column && sortConfig.direction === 'asc') {
-        direction = 'desc';
-    }
-
-    setSortConfig({ column, direction });
-
-    // Sort userData based on column and direction
-    const sortedData = [...filterData].sort((a, b) => {
-        let aValue: any = a[column];
-        let bValue: any = b[column];
-
-        // Handle date sorting specifically for the createdAt field
-        if (column === 'createdAt') {
-            aValue = new Date(aValue).getTime();
-            bValue = new Date(bValue).getTime();
-        }
-
-        // Sort in ascending or descending order
-        if (aValue < bValue) {
-            return direction === 'asc' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-            return direction === 'asc' ? 1 : -1;
-        }
-        return 0;
-    });
-
-    setFilterData(sortedData);
+        setSortConfig((prev) => {
+            const isSameColumn = prev?.column === column;
+            return {
+                column,
+                direction: isSameColumn && prev?.direction === 'asc' ? 'desc' : 'asc',
+            };
+        });
     };
-
+ 
 //filter
     const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-
         const {name, value} = e.target
         setFilterOption((prev) => ({
             ...prev,
@@ -211,46 +174,18 @@ const CategoryTable: React.FC = () => {
           }));
 
           setErrors({});
-
     }
 
     const handleFilter = (e: React.FormEvent<HTMLFormElement>) => {
-
         e.preventDefault();
-        
-        const { startDate, endDate, status } = filterOption;
+        const { startDate, endDate } = filterOption;
         const start = startDate ? new Date(startDate) : null;
         const end = endDate ? new Date(endDate) : null;
         
         if (!validateDateRange(start, end)) {
             return;
         }
-    
-        const filtered = categoryData.filter((category) => {
-            // Clone dates to avoid mutation
-            const categoryDate = new Date(category.createdAt);
-            categoryDate.setHours(0, 0, 0, 0);
-    
-            const startClone = start ? new Date(start) : null;
-            const endClone = end ? new Date(end) : null;
-    
-            if (startClone) startClone.setHours(0, 0, 0, 0);
-            if (endClone) endClone.setHours(0, 0, 0, 0);
-    
-            // Check if employeeDate is within the date range
-            const isWithinDateRange = 
-                (!startClone || categoryDate >= startClone) &&
-                (!endClone || categoryDate <= endClone);
-    
-            // Check if employee status matches
-            const isStatusMatch = status === undefined || category.isListed === status;
-    
-            return isWithinDateRange && isStatusMatch;
-        });
-    
-        console.log('Filtered Category:', filtered);
-        setFilterData(filtered);
-        setResult(filtered);
+
         setFilterModal(false);
         setFilterStatus(true);
     };
@@ -282,25 +217,19 @@ const CategoryTable: React.FC = () => {
     
     const removeFilter = () => {
         setFilterStatus(false);
-        setFilterData(categoryData);
+        setFilterOption({startDate: '', endDate: '', status: undefined})
     }
 
 //pagination
-
-    const paginatedData = result.slice(
-        (currentPage - 1) * pageSize,
-        currentPage * pageSize
-    );
-
-    const handleNext = () => {
-        if (currentPage < Math.ceil(result.length / pageSize)) {
-            setCurrentPage(currentPage + 1);
+   const handleNext = () => {
+        if (currentPage < Math.ceil(totalPage / pageSize)) {
+            setCurrentPage((prevPage) => prevPage + 1);
         }
     };
 
     const handlePrevious = () => {
         if (currentPage > 1) {
-            setCurrentPage(currentPage - 1);
+            setCurrentPage((prevPage) => prevPage - 1);
         }
     };
 
@@ -312,15 +241,10 @@ const CategoryTable: React.FC = () => {
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (editValidation()) {
-         const response = await handleRequest({
-            url:'/api/employee/update_category',
-            method:'PUT',
-            data: editFormData || {},
-        });
+         const confirm = await editConfirm();
+         if(!confirm){ return };
+         const response = await editCategory(editFormData);
 
-        if(response.error){
-            errorToast(response.error)
-        }
         if(response.data){
             setEditModal(false)
             setResult(response.data);
@@ -328,7 +252,6 @@ const CategoryTable: React.FC = () => {
         }
       };
       
-
   return (
 
     <div className="relative flex flex-col w-full h-full text-gray-700 bg-white dark:bg-nightBlack dark:text-lightGray  bg-clip-border ">
@@ -377,7 +300,7 @@ const CategoryTable: React.FC = () => {
                     <Search size={18} />
                 </div>
                     <input
-                        className="peer h-full w-full rounded-[7px] border border-blue-gray-200 dark:border-gray-600 border-t-transparent bg-transparent dark:bg-gray-800 px-3 py-2.5 !pr-9 font-sans text-sm font-normal text-blue-gray-700 dark:text-gray-200 outline outline-0 transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 dark:placeholder-shown:border-gray-600 dark:placeholder-shown:border-t-gray-600 focus:border-2 focus:border-gray-900 dark:focus:border-gray-400 focus:border-t-transparent dark:focus:border-t-transparent focus:outline-0 disabled:border-0 disabled:bg-blue-gray-50 dark:disabled:bg-gray-700"
+                        className="peer h-full w-full rounded-[7px] border border-blue-gray-200 dark:border-gray-600 border-t-transparent bg-transparent dark:bg-darkGray px-3 py-2.5 !pr-9 font-sans text-sm font-normal text-blue-gray-700 dark:text-gray-200 outline outline-0 transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 dark:placeholder-shown:border-gray-600 dark:placeholder-shown:border-t-gray-600 focus:border-2 focus:border-gray-900 dark:focus:border-gray-400 focus:border-t-transparent dark:focus:border-t-transparent focus:outline-0 disabled:border-0 disabled:bg-blue-gray-50 dark:disabled:bg-gray-700"
                         placeholder=" "
                         onChange={(e) => setSearchValue(e.target.value)}
                     />
@@ -392,260 +315,233 @@ const CategoryTable: React.FC = () => {
         </div>
         </div>
 
-        {/* table */}
-        <div className="p-6 px-0 overflow-scroll overflow-x-hidden overflow-y-hidden">
-        <table className="w-full mt-4 text-left table-auto min-w-max">
-            <thead className='text-center'>
-            <tr >
-            <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                    ID
-                    <ChevronsUpDown size={13} onClick={() => handleSort('id')}/>
-                </p>
-                </th>
+  {categoryData.length || result.length ?(  <>        
+   {/* Table Container */}
+    <DataTable  
+      columns={columns} 
+      data={result} 
+      onEdit={handleEditClick} 
+      onListed={handleListing} 
+      onSort={handleSort}
+      currentPage={currentPage}
+      pageSize={pageSize}
+      totalPage={totalPage}
+      handleNext={handleNext}
+      handlePrevious={handlePrevious}
+      />
+      
+    {/* <div className="p-6 overflow-x-auto max-w-full">
+        <table className="w-full mt-4 text-center border-collapse min-w-max rounded-lg shadow-md overflow-hidden table-auto">
+      
+            <thead className="text-center bg-gray-100 dark:bg-darkGray">
+            <tr className="text-gray-700 dark:text-gray-300 text-sm">
+                {["ID","Category Name", "Status","Created At", "Action"].map((header, index) => (
                 <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                    Category Name
-                    <ChevronsUpDown size={13} onClick={() => handleSort('name')}/>
-                </p>
+                    key={index}
+                    className="p-4 border-b border-gray-300 dark:border-gray-700 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
+                    onClick={() =>  header !== 'Action' ? handleSort(columnMap[header]) : null}
+                >
+                <div className="flex items-center justify-center gap-2">
+                    {header}
+                    {["ID","Category Name","Created At"].includes(header) && <ChevronsUpDown size={14} />}
+                </div> 
                 </th>
-                <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                        Status
-                    <ChevronsUpDown size={13}/>
-                </p>
-                </th>
-                <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                    Created At
-                    <ChevronsUpDown size={13} onClick={() => handleSort('createdAt')}/>
-                </p>
-                </th>
-                <th
-                className="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-                  <p
-                    className="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-                    Action
-                </p>
-                </th>
+                ))}
             </tr>
             </thead>
 
-            <tbody>
+  
+            <tbody className="text-gray-800 dark:text-gray-200 text-sm">
+            {result.map((value, index) => (
+                <tr key={index} className="hover:bg-gray-100 dark:hover:bg-darkGray transition-all">
+                
+                <td className="p-4 border-b border-gray-300 dark:border-gray-700 whitespace-nowrap">
+                    <p className="font-medium">{value.id.slice(7, 16)}</p>
+                </td>
 
-            {paginatedData.map((value, index) => {
-            return(
-            <tr key={index}>
-            <td className="p-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex flex-col">
-                    <p
-                        className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900 opacity-70">
-                        {value.id.split('').slice(7,16).join("")}
-                    </p>
-                    </div>
-                </div>
+            
+                <td className="p-4 border-b border-gray-300 dark:border-gray-700 max-w-[150px] whitespace-nowrap overflow-hidden text-ellipsis">
+                    <p className="truncate">{value.name}</p>
                 </td>
-                <td className="p-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex flex-col">
-                    <p className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                        {value.name}
-                    </p>
 
-                    </div>
-                </div>
-                </td>
-                <td className="p-4">
-                <div className="w-max">
-                    <div
-                    className="relative grid items-center px-2 py-1 font-sans text-xs font-bold uppercase rounded-md select-none whitespace-nowrap bg-blue-gray-500/20 text-blue-gray-900">
-                        {!value.isListed ?
-                         <span className="">Unlisted</span>
-                         :
-                         <span className="">Listed</span>
-                        }
-                    
-                    </div>
-                </div>
-                </td>
-                <td className="p-4">
-                <p className="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                    {value.createdAt}
-                </p>
-                </td>
-                <td className="p-4">
-                <button
-                    className="relative h-10 max-h-[40px] w-24 max-w-[70px] select-none rounded-lg text-center align-middle font-sans text-xs font-medium uppercase text-gray-900 transition-all hover:bg-gray-900/10 active:bg-gray-900/20 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none border dark:border-lightGray dark:bg-lightGray dark:text-darkGray "
-                    type="button"
-                    onClick={() => handleListing(value.id)}
+               
+                <td className="p-4 border-b border-gray-300 dark:border-gray-700">
+                    <span
+                    className={`px-3 py-1 text-xs font-bold rounded-md uppercase ${
+                        value.isListed
+                        ? "bg-green-500/20 text-green-600 dark:bg-green-400/20 dark:text-green-300"
+                        : "bg-red-500/20 text-red-600 dark:bg-red-400/20 dark:text-red-300"
+                    }`}
                     >
-                        {!value.isListed ? 
-                        <span className="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2 dark:text-darkGray">
-                            List
-                        </span> 
-                        :
-                        <span className="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2 dark:text-darkGray">
-                            Unlist
-                        </span>
-                        }
-                </button>
-                <button className='ml-3'
-                onClick={() =>handleEditClick(value)}
-                >
-                    <Pencil size={18}/>
-                </button>
-             </td>
-            </tr>
-            )
-            })}
+                    {value.isListed ? "Listed" : "Unlisted"}
+                    </span>
+                </td>
+
+           
+                <td className="p-4 border-b border-gray-300 dark:border-gray-700 whitespace-nowrap">
+                    <p>{value.createdAt}</p>
+                </td>
+
+                <td className="p-4 border-b border-gray-300 dark:border-gray-700">
+                    <div className="flex items-center gap-3">
+         
+                    <button
+                        className="px-4 py-1.5 text-xs font-semibold uppercase border rounded-lg transition-all dark:border-gray-500 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                        onClick={() => handleListing(value.id, index)}
+                    >
+                        {value.isListed ? "Unlist" : "List"}
+                    </button>
+
+                    <button
+                        className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
+                        onClick={() => handleEditClick(value)}
+                    >
+                        <Pencil size={18} />
+                    </button>
+                    </div>
+                </td>
+                </tr>
+            ))}
             </tbody>
         </table>
-        </div>
+        </div> */}
 
         {/* bottom */}
-        <div className="flex items-center justify-between p-4 border-t border-blue-gray-50">
+        {/* <div className="flex items-center justify-between p-4  border-blue-gray-50">
             <p className="text-sm">
-                Page {currentPage} of {Math.ceil(result.length / pageSize)}
+                Page {currentPage} of {Math.ceil(totalPage / pageSize)}
             </p>
             <div className="flex gap-2">
                 <button 
                     onClick={handlePrevious} 
                     disabled={currentPage === 1}
-                    className="select-none rounded-lg border border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+                    className="select-none rounded-lg border dark:text-gray-50 dark:border-gray-50 border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
                     >
                     Previous
                 </button>
                 <button
                     onClick={handleNext}
-                    disabled={currentPage >= Math.ceil(result.length / pageSize)}
-                    className="select-none rounded-lg border border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+                    disabled={currentPage >= Math.ceil(totalPage / pageSize)}
+                    className="select-none rounded-lg border dark:text-gray-50 dark:border-gray-50 border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
                     >  
                     Next
                 </button>
             </div>
-       </div>
+       </div> */}
+       </>): <NoContent message='No category added'/>}
 
         {/* modalCreateEmployee */}
         {createModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div className="bg-white p-4 rounded-md shadow-lg max-w-md">
-                <h1 className="text-center text-xl font-semibold">Create Category</h1>
-                <form className="mx-auto max-w-xs flex flex-col gap-4" onSubmit={handleSubmit}>
-                    <div className="mt-1">
-                    <div className="flex flex-col">
-                        <input
-                        type="text"
-                        name="name"
-                        placeholder="Enter name"
-                        className="border p-1 rounded-md"
-                        onChange={handleChange}
-                        />
-                        {errors && errors.name && (
-                        <span className="text-red-500 text-sm mt-1">{errors.name}</span>
-                        )}
-                    </div>
-                    </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity">
+            <div className="bg-white p-6 rounded-lg shadow-lg transform transition-transform scale-95 max-w-md w-full">
+            <h1 className="text-center text-xl font-semibold text-darkGray">Create Category</h1>
+            <form className="mx-auto max-w-xs flex flex-col gap-4" onSubmit={handleSubmit}>
 
-                    <div className="mt-1 flex justify-center">
-                    <button className="border p-1 rounded-md shadow-md" type="submit">
-                        Create
-                    </button>
-                    <button
-                        className="border p-1 rounded-md ml-2 bg-darkGray text-white"
-                        type="button"
-                        onClick={handleCancel}
-                    >
-                        Cancel
-                    </button>
-                    </div>
-                </form>
-                </div>
-            </div>
-        )}
-
-        {/* modalFilter */}
-        {filterModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-white p-4 rounded-md shadow-lg max-w-md">
-                <h1 className="text-center text-xl font-semibold">Filter</h1>
-                <form className="mx-auto max-w-xs flex flex-col gap-4" onSubmit={handleFilter}>
-                
-                {/* Date Range Input */}
-                <div className="flex flex-col mt-1">
-                    <label className="text-sm font-semibold">Start Date</label>
-                    <input
-                    type="date"
-                    name="startDate"
-                    className="border p-1 rounded-md"
-                    onChange={handleFilterChange}
-                    />
-                </div>
-                <div className="flex flex-col mt-1">
-                    <label className="text-sm font-semibold">End Date</label>
-                    <input
-                    type="date"
-                    name="endDate"
-                    className="border p-1 rounded-md"
-                    onChange={handleFilterChange}
-                    />
-                    {errors && <span className='text-red-500'>{errors.date}</span>}
-                </div>
-                
-
-                {/* Status Input */}
-                <div className="mt-2 flex flex-col">
-                    <label className="text-sm font-semibold">Status</label>
-                    <select
-                    name="status"
-                    className="border p-1 rounded-md"
-                    onChange={handleFilterChange}
-                    >
-                    <option value="">Select Status</option>
-                    <option value="-1">Unlisted</option>
-                    <option value="1">Listed</option>
-                    </select>
+                {/* Name Input */}
+                <div>
+                <input
+                    type="text"
+                    name="name"
+                    placeholder="Enter name"
+                    className="w-full border rounded-md px-3 py-2 text-darkGray"
+                    onChange={handleChange}
+                />
+                {errors?.name && <span className="text-red-500 text-sm mt-1">{errors.name}</span>}
                 </div>
 
                 {/* Action Buttons */}
-                <div className="mt-1 flex justify-center">
-    
-                    <button className="border p-1 rounded-md shadow-md" type="submit">
-                    Apply
-                    </button>
-                
+                <div className="flex justify-center gap-4">
+                <button type="submit" className="px-4 py-2 bg-black text-white rounded-md shadow-md">
+                    Create
+                </button>
+                <button
+                    type="button"
+                    onClick={handleCancel}
+                    className="px-4 py-2 bg-lightGray text-black rounded-md"
+                >
+                    Cancel
+                </button>
+                </div>
+            </form>
+            </div>
+        </div>
+        )}
 
-                    <button
-                    className="border p-1 rounded-md ml-2 bg-darkGray text-white"
+
+        {/* modalFilter */}
+        {filterModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity">
+            <div className="bg-white p-6 rounded-lg shadow-lg transform transition-transform scale-95 max-w-md w-full">
+            <h1 className="text-center text-xl font-semibold text-darkGray">Filter</h1>
+            <form className="mx-auto max-w-xs flex flex-col gap-4" onSubmit={handleFilter}>
+                
+                {/* Date Range Input */}
+                <div className="flex flex-col">
+                <label className="text-sm font-medium text-nightBlack">Start Date</label>
+                <input
+                    type="date"
+                    name="startDate"
+                    className="w-full border rounded-md px-3 py-2 text-darkGray"
+                    onChange={handleFilterChange}
+                />
+                </div>
+
+                <div className="flex flex-col">
+                <label className="text-sm font-medium text-nightBlack">End Date</label>
+                <input
+                    type="date"
+                    name="endDate"
+                    className="w-full border rounded-md px-3 py-2 text-darkGray"
+                    onChange={handleFilterChange}
+                />
+                {errors?.date && <span className="text-red-500 text-sm mt-1">{errors.date}</span>}
+                </div>
+
+                {/* Status Input */}
+                <div className="flex flex-col">
+                <label className="text-sm font-medium text-nightBlack">Status</label>
+                <select
+                    name="status"
+                    className="w-full border rounded-md px-3 py-2 text-darkGray"
+                    onChange={handleFilterChange}
+                >
+                    <option value="">Select Status</option>
+                    <option value="-1">Unlisted</option>
+                    <option value="1">Listed</option>
+                </select>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-center gap-4 mt-2">
+                <button type="submit" className="px-4 py-2 bg-black text-white rounded-md shadow-md">
+                    Apply
+                </button>
+                <button
                     type="button"
                     onClick={() => setFilterModal(false)}
-                    >
+                    className="px-4 py-2 bg-lightGray text-black rounded-md"
+                >
                     Cancel
-                    </button>
+                </button>
                 </div>
-                </form>
+            </form>
             </div>
-            </div>
+        </div>
         )}
+
 
         {editModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity">
-            <div className="bg-white p-6 rounded-lg shadow-lg transform transition-transform scale-95">
-            <h2 className="text-lg font-bold mb-4 text-darkGray">Edit Category</h2>
-            <form onSubmit={handleEditSubmit}>
-                <div className="mb-4">
-                <label className="block text-sm font-medium mb-1 text-nightBlack">category name</label>
+            <div className="bg-white p-6 rounded-lg shadow-lg transform transition-transform scale-95 max-w-md w-full">
+            <h2 className="text-lg font-bold mb-4 text-darkGray text-center">Edit Category</h2>
+            <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
+                
+                {/* Category Name Input */}
+                <div>
+                <label className="block text-sm font-medium text-nightBlack">Category Name</label>
                 <input
                     type="text"
-                    name='name'
+                    name="name"
                     value={editFormData?.name || ''}
                     onChange={(e) =>
                     setEditFormData((prev) => prev && { ...prev, name: e.target.value })
@@ -653,28 +549,27 @@ const CategoryTable: React.FC = () => {
                     className="w-full border rounded-md px-3 py-2 text-darkGray"
                     required
                 />
-                {errors.name && <span className='text-red-500'>{errors.name}</span>}
+                {errors?.name && <span className="text-red-500 text-sm">{errors.name}</span>}
                 </div>
-                <div className="flex justify-end gap-2">
-                <button
-                    type="submit"
-                    className="px-4 py-2 bg-customPink text-white rounded-md"
-                >
+
+                {/* Action Buttons */}
+                <div className="flex justify-end gap-4">
+                <button type="submit" className="px-4 py-2 bg-black text-white rounded-md shadow-md">
                     Save
                 </button>
                 <button
                     type="button"
                     onClick={() => setEditModal(false)}
-                    className="px-4 py-2 bg-darkGray rounded-md"
+                    className="px-4 py-2 bg-lightGray rounded-md"
                 >
                     Cancel
                 </button>
-
                 </div>
             </form>
             </div>
         </div>
         )}
+
     </div>
   
   )

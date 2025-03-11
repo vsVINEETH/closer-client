@@ -1,14 +1,14 @@
 import React from 'react';
-import Header from '@/components/user/Header';
-import Footer from '@/components/user/Footer';
+import Header from '@/components/reusables/Header';
+import Footer from '@/components/reusables/Footer';
 import SideBar from '@/components/user/SideBar';
 import PasswordForm from '@/components/user/forms/ChangePassword';
 
 const Security: React.FC = () => {
 
     return (
-        <div className="flex flex-col min-h-screen">
-            <Header />
+        <div className="flex flex-col min-h-screen select-none caret-transparent">
+            <Header htmlFor='user' />
                <div className='flex flex-row'>
                
                     <SideBar/>
@@ -16,7 +16,7 @@ const Security: React.FC = () => {
                         <PasswordForm/>
                        </div>
                  </div>
-           <Footer/>
+           <Footer htmlFor='user'/>
         </div>
       );
 }

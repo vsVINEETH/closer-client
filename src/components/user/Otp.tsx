@@ -2,8 +2,8 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import useAxios from "@/hooks/useAxios/useAxios";
-import { errorToast, successToast } from "@/utils/toasts/toats";
+import { successToast } from "@/utils/toasts/toast";
+import { useSecurity } from "@/hooks/crudHooks/user/useSecurity";
 
 
 interface Errors {
@@ -16,7 +16,7 @@ const Otp: React.FC = () => {
   const [errors, setErrors] = useState<Errors>({});
   const [show, setShow] = useState<boolean>(true);
   const [timer, setTimer] = useState<number>(59);
-  const {handleRequest} = useAxios()
+  const {validateOTPSignup, resendVerificationCodeSignup} = useSecurity()
   const router = useRouter();
 
   useEffect(() => {
@@ -88,18 +88,8 @@ const Otp: React.FC = () => {
     if (validateForm()) {
       try {
         const email = localStorage.getItem("email");
-        const response = await handleRequest({
-          url:'/api/user/verify',
-          method: 'POST',
-          data:{
-            email,
-            otp
-          }
-        })
-
-        if(response.error){
-          errorToast(response.error)
-        }
+        if(!email) return;
+        const response = await validateOTPSignup(email, otp);
 
         if(response.data){
           router.push("/user/setup");
@@ -119,15 +109,8 @@ const Otp: React.FC = () => {
       setTimer(59);
       setShow(true);
       const email = localStorage.getItem("email");
-      const response = await handleRequest({
-        url: '/api/user/resend',
-        method:'POST',
-        data:{email}
-      })
-
-      if(response.error){
-        errorToast(response.error)
-      }
+      if(!email) return;
+      const response = await resendVerificationCodeSignup(email);
 
       if(response.data){
         successToast(response.data)
@@ -141,7 +124,7 @@ const Otp: React.FC = () => {
 
   const validateForm = (): boolean => {
     const newErrors: Errors = {};
-    otp.forEach((element) => {
+     otp.forEach((element) => {
       if (!element.trim()) {
         newErrors.inputOtp = "Fields are empty";
       }

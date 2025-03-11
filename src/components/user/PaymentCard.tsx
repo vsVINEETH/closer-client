@@ -1,11 +1,13 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import useAxios from '@/hooks/useAxios/useAxios';
-import { errorToast, successToast, warnToast } from '@/utils/toasts/toats';
+import { errorToast, infoToast, successToast, warnToast } from '@/utils/toasts/toast';
+import { handlePaymentSuccess, paymentConfirm } from '@/utils/sweet_alert/sweetAlert';
 import { useSelector, useDispatch } from 'react-redux';
 import { updatePrimeStatus } from '@/store/slices/userSlice';
 import { RootState } from '@/store';
+import { useFetch } from '@/hooks/fetchHooks/useUserFetch';
+import { useUserInteractions } from '@/hooks/crudHooks/user/useUserInteractions';
 
 interface PlanData {
 _id: string,
@@ -23,12 +25,15 @@ const PaymentCard: React.FC = () => {
   const router = useRouter();
 
   const user = useSelector((state: RootState) => state.user.userInfo);
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
 
-  const {handleRequest} = useAxios()
+  const {walletPaymentForSubscrition, subscriptionPayment, verifyPaymentForSubscription, dismissSubscriptionPayment} = useUserInteractions()
+  const { getSubscriptionPlanData} = useFetch()
+  
   useEffect(() => {
     fetchPlanData()
   },[]);
+
 
   useEffect(() => {
     // Load Razorpay script
@@ -44,21 +49,12 @@ const PaymentCard: React.FC = () => {
 
 
   const fetchPlanData = async() => {
-    const response = await handleRequest({
-        url:'/api/user/selected_subscription',
-        method:'GET',
-        params:{
-            planId
-        }
-    });
-
-    if(response.error){
-        errorToast(response.error)
-    }
+    if(!planId) return;
+    const response = await getSubscriptionPlanData(planId);
 
     if(response.data){
         setPlanData(response.data);
-    }
+    };
   }
 
   const handlePaymentMethodChange = (method: 'online' | 'wallet') => {
@@ -66,51 +62,44 @@ const PaymentCard: React.FC = () => {
   };
 
   const handleBuy = async() => {
+     const confirm = await paymentConfirm();
+     if(!confirm) return;
     if(paymentMethod == 'wallet'){
-      const response = await handleRequest({
-        url:'/api/user/wallet_payment',
-        method:'POST',
-        data:{
-          id:user?.id,
-          amount: planData?.price
-        }
+      const response = await walletPaymentForSubscrition({
+        purpose:'subscription',
+        userId:user?.id,
+        amount: planData?.price,
+        planId: planData?._id,
+        planType: planData?.planType,
+        isPrime: user?.prime?.isPrime
       })
 
       if(response.error){
         warnToast(response.error)
       }
       if(response.data){
-        console.log(response.data)
+        await handlePaymentSuccess(true);
         const { isPrime, primeCount, startDate, endDate } = response.data.prime;
-      dispatch(
-        updatePrimeStatus({
-          isPrime,
-          primeCount,
-          startDate,
-          endDate
-        })
+        dispatch(
+          updatePrimeStatus({
+            isPrime,
+            primeCount,
+            startDate,
+            endDate
+          })
       );
         successToast('Closer Prime is activated');
         router.push('/user/profile') 
       }
     } else { 
-       const response = await handleRequest({
-    url:'/api/user/create_order',
-    method:'POST',
-    data:{
-      currency:'INR',
-      amount: planData?.price,
-      userId: user?.id,
-      planId: planId,
-      planType: planData?.planType,
-      isPrime: user?.prime?.isPrime
-    }
-
-  });
-
-  if(response.error){
-    errorToast(response.error)
-  };
+  const response = await subscriptionPayment({
+    currency:'INR',
+    amount: planData?.price,
+    userId: user?.id,
+    planId: planId,
+    planType: planData?.planType,
+    isPrime: user?.prime?.isPrime
+  })
 
   if(response.data){
     const {id, currency, amount} = response.data;
@@ -123,27 +112,21 @@ const PaymentCard: React.FC = () => {
       description: `${planData?.planType}- Subscription`,
       order_id: id,
       handler: async (response: any) => {
-        console.log(response)
         try {
           // Verify payment on backend
-          const verificationResponse = await handleRequest({
-            url:'/api/user/verify_payment',
-            method:'POST',
-            data:{
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              userId: user?.id,
-              amount: amount,
-              planId: planData?._id,
-              planType: planData?.planType
-            }
-
+          const verificationResponse = await verifyPaymentForSubscription({
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            userId: user?.id,
+            amount: amount,
+            planId: planData?._id,
+            planType: planData?.planType
           });
 
           // Handle successful payment
           if (verificationResponse.data) {
-            console.log(verificationResponse.data)
+            await handlePaymentSuccess(false)
             const { isPrime, primeCount, startDate, endDate } = verificationResponse.data.prime;
               dispatch(
                 updatePrimeStatus({
@@ -178,31 +161,38 @@ const PaymentCard: React.FC = () => {
         color: "#4e73df"
       },
       modal: {
-        ondismiss: () => {
-          errorToast('Payment cancelled')
+        ondismiss: async () => {
+          if(!user?.id) return
+          const response = await dismissSubscriptionPayment(user?.id)
+          if(response.data){
+            infoToast('Payment cancelled')
+          };
         }
       }
     };
-
     // Open Razorpay checkout
     const paymentObject = new (window as any).Razorpay(options);
     paymentObject.open();
-
     }
    }
  }
   
 
   return (
-    
-    <div className="max-w-md mx-auto mt-10 p-8 bg-gradient-to-br from-white to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
+    <>
+      {/* <div className='flex items-center dark:text-white text-gray-500 cursor-pointer' onClick={goBack} >
+       <ChevronLeft size={20}/>
+      <span > Back</span>
+      </div> */}
+    <div className="max-w-md mx-auto mt-10 p-8 dark:bg-darkGray rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
       {/* Header */}
+      
       <h2 className="text-xl font-bold text-center mb-6 text-gray-800 dark:text-white">
         Payment Summary
       </h2>
 
       {/* Plan Details */}
-      <div className="flex justify-between items-center mb-8 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg shadow-md">
+      <div className="flex justify-between items-center mb-8 p-4 bg-gray-100 dark:bg-nightBlack rounded-lg shadow-md">
         <div className="flex items-center">
 
           <span className="font-medium text-lg text-gray-700 dark:text-gray-200">
@@ -268,6 +258,7 @@ const PaymentCard: React.FC = () => {
         <span className="text-gray-500 font-semibold">Secure Checkout</span>
       </p>
     </div>
+    </>
   );
 };
 

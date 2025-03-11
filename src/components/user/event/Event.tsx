@@ -1,138 +1,185 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import useAxios from '@/hooks/useAxios/useAxios';
+import { Coins, Hand } from 'lucide-react';
+import { useFetch } from '@/hooks/fetchHooks/useAdminFetch';
 
 interface Event {
   _id: string;
   title: string;
   location: string;
   locationURL: string;
-  description: string,
+  description: string;
   image: string[];
-  eventDate: string,
-  createdAt: string,
+  eventDate: string;
+  createdAt: string;
+  price: number,
+  slots: number,
+  totalEntries: number,
+}
+interface FilterOption {
+  startDate: string;
+  endDate: string;
+  status: boolean | undefined;
 }
 
 const Event: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
+  const [searchValue, setSearchValue] = useState<string>('');
+  const [sortOption, setSortOption] = useState<string>('Newest');
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortOption, setSortOption] = useState('Newest');
-  const { handleRequest } = useAxios();
+  const [filterOption] = useState<FilterOption>({ startDate: '', endDate: '', status: undefined });
+  
+  const [debouncedSearchValue, setDebouncedSearchValue] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState<number>(3);
+  const [totalPage, setTotal] = useState<number>(0);
+
+  const {getEventData} = useFetch();
   const router = useRouter();
+
+
+  const searchFilterSortParams = {
+    search: searchValue || '',
+    startDate: filterOption.startDate || '',
+    endDate: filterOption.endDate || '',
+    status: filterOption.status,
+    sortColumn: 'createdAt',
+    sortDirection: sortOption === 'Newest' ? 'desc' : 'asc',
+    page: currentPage,
+    pageSize,
+  };
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchValue(searchValue);
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [searchValue]);
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+  }, [debouncedSearchValue, filterOption, currentPage, pageSize, sortOption]);
 
-  useEffect(() => {
-    applyFiltersAndSort();
-  }, [events, searchQuery, sortOption]);
-
-  const fetchEvents = async () => {
-    const response = await handleRequest({
-      url: '/api/admin/events',
-      method: 'GET',
-    });
-
-    if (response.error) {
-      console.error('Something happened');
-    }
-
+  async function fetchEvents () {
+    const response = await getEventData(searchFilterSortParams)
     if (response.data) {
-      setEvents(response.data);
+      setEvents(response.data.events);
+      setTotal(response.data.total)
     }
   };
 
-  const applyFiltersAndSort = () => {
-    let updatedEvents = [...events];
 
-    // Apply search filter
-    if (searchQuery) {
-      updatedEvents = updatedEvents.filter((blog) =>
-        blog.title.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+  const handleNext = () => {
+    if (currentPage < Math.ceil(totalPage / pageSize)) {
+        setCurrentPage((prevPage) => prevPage + 1);
     }
+  };
 
-    // Apply sorting
-    if (sortOption === 'Newest') {
-        updatedEvents.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    } else if (sortOption === 'Oldest') {
-        updatedEvents.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-    } else if (sortOption === 'Title A-Z') {
-        updatedEvents.sort((a, b) => a.title.localeCompare(b.title));
-    } else if (sortOption === 'Title Z-A') {
-        updatedEvents.sort((a, b) => b.title.localeCompare(a.title));
-    }
-
-    setFilteredEvents(updatedEvents);
+  const handlePrevious = () => {
+      if (currentPage > 1) {
+          setCurrentPage((prevPage) => prevPage - 1);
+      }
   };
 
   return (
     <div className="p-6 bg-gradient-to-b min-h-screen">
-      <h1 className="text-3xl text-center font-extrabold mb-6  text-customPink">
-        Upcoming events for you
-      </h1>
+      <h1 className="text-3xl text-center font-extrabold mb-6 text-customPink dark:text-lightGray">Upcoming events for you</h1>
 
-      {/* Search and Filter Controls */}
       <div className="flex flex-wrap gap-4 justify-center mb-8">
         <input
           type="text"
           placeholder="Search events by title..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
           className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
         />
         <select
           value={sortOption}
           onChange={(e) => setSortOption(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-        >
+          className="px-4 py-2 border border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+         >
           <option value="Newest">Newest</option>
           <option value="Oldest">Oldest</option>
-          <option value="Title A-Z">Title A-Z</option>
-          <option value="Title Z-A">Title Z-A</option>
         </select>
       </div>
 
-      {/* Blog Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {filteredEvents.map((event) => (
+      <div className="grid grid-cols-1  sm:grid-cols-2 md:grid-cols-3 gap-6">
+        {events && events?.map((event) => (
           <div
             key={event._id}
-            className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+            className="bg-white dark:bg-darkGray rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 border border-gray-700 overflow-hidden"
           >
             <img
               src={event.image[0]}
               alt={event.title}
-              className="w-full h-48 object-cover"
+              className="w-full h-52 object-cover rounded-t-2xl"
             />
-            <div className="p-5">
-              <h3 className="text-2xl font-bold text-gray-800 mb-3">{event.title}</h3>
-              {/* <h4 className="text-lg font-bold text-gray-800 mb-3">{new Date(event.eventDate).toLocaleDateString()}</h4> */}
-              <p className="text-gray-600 text-md font-semibold">Venue: {event.location}</p>
-              <p className="text-gray-600 text-md font-semibold mb-2">Date: {new Date(event.eventDate).toLocaleDateString()}</p>
-              <p className="text-gray-600 text-md font-semibold mb-4">{event.description}</p>
-              <a href={event.locationURL} target='blank'>
-              <button
-                className="px-2 py-2 bg-customPink text-white font-semibold rounded-lg hover:bg-red-400 transition-colors duration-300"
-              >
-                Location
-              </button>
-              </a>
+            <div className="bg-white dark:bg-darkGray rounded-2xl shadow-md hover:shadow-lg transition-shadow p-6 space-y-3 border border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{event.title}</h3>
+              
+              <div className="text-gray-600 dark:text-gray-300 text-sm flex flex-col space-y-1">
+                <p className="flex items-center">
+                  📍 <span className="ml-1">Venue: {event.location}</span>
+                </p>
+                <p className="flex items-center">
+                  📅 <span className="ml-1">Date: {new Date(event.eventDate).toLocaleDateString()}</span>
+                </p>
+              </div>
+
+                <div className="flex items-center space-x-4 text-gray-700 dark:text-gray-300 text-sm font-medium">
+                  <div className="flex items-center">
+                    <Coins size={16} className="mr-1 text-yellow-500" />
+                    <span>Price: <span className="font-semibold">{event.price}</span> / per head</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Hand size={16} className="mr-1 text-red-500" />
+                    <span>Slots: <span className="font-semibold">{event.slots} left</span></span>
+                  </div>
+                </div>
+
+                <p className="text-gray-600 dark:text-gray-300 text-sm mt-2 line-clamp-3">{event.description}</p>
+
+                <button
+                  onClick={() => router.push(`/user/events/${event._id}`)}
+                  className="w-full mt-4 py-2 text-white font-semibold rounded-lg bg-customPink dark:bg-gray-600 hover:opacity-90 hover:scale-[1.02] transition-transform duration-300"
+                >
+                  Book Now
+                </button>
             </div>
           </div>
         ))}
       </div>
 
-      {/* No Results Message */}
-      {filteredEvents.length === 0 && (
-        <div className="text-center text-gray-500 mt-8">
-          No blogs found. Try a different search or filter.
-        </div>
+
+      {events.length === 0 && (
+        <div className="text-center text-gray-500 dark:bg-lightGray mt-8">No events found. Try a different search or filter.</div>
       )}
+
+  
+        <div className="flex justify-center mt-6 space-x-4">
+        <button 
+              onClick={handlePrevious} 
+              disabled={currentPage === 1}
+              className={`px-4 py-2 rounded-lg ${currentPage === 1 ? 'bg-gray-300 dark:text-gray-600' : 'bg-customPink text-white hover:bg-red-500'}`}
+              >
+              Previous
+          </button>
+
+          <span className="px-4 py-2 font-semibold dark:text-lightGray">
+            Page {currentPage} of {Math.ceil(totalPage / pageSize)}
+          </span>
+
+           <button
+                onClick={handleNext}
+                disabled={currentPage >= Math.ceil(totalPage / pageSize)}
+                 className={`px-4 py-2 rounded-lg ${currentPage === totalPage ? 'bg-gray-300 dark:text-gray-600' : 'bg-customPink text-white hover:bg-red-500'}`}
+                >  
+                Next
+            </button>
+        </div>
+    
     </div>
   );
 };

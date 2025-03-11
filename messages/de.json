@@ -1,5 +1,60 @@
 {
     "HomePage": {
-        "title": "näher"
-    }
+      "title": "Nähe"
+    },
+  
+    "Header": {
+      "title": "Nähe",
+      "signIn": "Anmelden",
+      "home": "Startseite",
+      "blog": "Blog",
+      "event": "Veranstaltung"
+    },
+  
+    "Footer": {
+      "title": "Nähe",
+      "writing": "Herzen verbinden und bedeutungsvolle Beziehungen schaffen. Finde noch heute deine perfekte Übereinstimmung.",
+      "quickLinks": "Schnellzugriff",
+      "homeLink": "Startseite",
+      "aboutLink": "Über uns",
+      "servicesLink": "Dienstleistungen",
+      "contactLink": "Kontakt",
+      "followUs": "Folge uns",
+      "rights": "@2024 Nähe. Alle Rechte vorbehalten."
+    },
+  
+    "LandingComponents": {
+      "titleOne": "Finde deinen",
+      "titleTwo": "perfekten Partner",
+      "titleThree": "heute",
+      "description": "Das Leben ist zu kurz für langweilige Verbindungen. Schließe dich Tausenden von Singles an, die bereits ihre besondere Person auf unserer Plattform finden.",
+      "getStarted": "Loslegen",
+      "signIn": "Anmelden",
+      "cardOne": "Tausende aktive Nutzer",
+      "cardTwo": "Bedeutungsvolle Gespräche",
+      "cardThree": "Perfekter Matching-Algorithmus",
+      "match": "94% Übereinstimmung!",
+      "comment": "Basierend auf deinen Vorlieben"
+    },
+
+    "Login": {
+      "header": "Melden Sie sich bei Closer an",
+      "email": "Geben Sie Ihre E-Mail ein",
+      "password": "Geben Sie Ihr Passwort ein",
+      "comment": "Hey, geben Sie Ihre Anmeldedaten ein, um sich anzumelden",
+      "auth": "Mit Google anmelden",
+      "signIn": "Anmelden",
+      "noAccount": "Haben Sie kein Konto?",
+      "forgotPassword": "Passwort vergessen?",
+      "or": "oder"
+
+    },
+
+    "Sidebar": {
+  "matches": "Übereinstimmungen",
+  "messages": "Nachrichten",
+  "notifications": "Benachrichtigungen"
 }
+
+  }
+  

@@ -1,0 +1,59 @@
+{
+    "HomePage": {
+      "title": "Closer"
+    },
+  
+    "Header": {
+      "title": "Closer",
+      "signIn": "Se connecter",
+      "home": "Accueil",
+      "blog": "Blog",
+      "event": "Événement"
+    },
+  
+    "Footer": {
+      "title": "Closer",
+      "writing": "Relier les cœurs et créer des relations significatives. Trouvez votre partenaire idéal dès aujourd’hui.",
+      "quickLinks": "Liens rapides",
+      "homeLink": "Accueil",
+      "aboutLink": "À propos",
+      "servicesLink": "Services",
+      "contactLink": "Contact",
+      "followUs": "Suivez-nous",
+      "rights": "@2024 Closer. Tous droits réservés."
+    },
+  
+    "LandingComponents": {
+      "titleOne": "Trouvez votre",
+      "titleTwo": "partenaire idéal",
+      "titleThree": "aujourd’hui",
+      "description": "La vie est trop courte pour des relations ennuyeuses. Rejoignez des milliers de célibataires qui trouvent déjà leur âme sœur sur notre plateforme.",
+      "getStarted": "Commencer",
+      "signIn": "Se connecter",
+      "cardOne": "Des milliers d’utilisateurs actifs",
+      "cardTwo": "Des conversations enrichissantes",
+      "cardThree": "Un algorithme de correspondance parfait",
+      "match": "94% de compatibilité !",
+      "comment": "Basé sur vos préférences"
+    },
+
+    "Login": {
+      "header": "Connectez-vous à Closer",
+      "email": "Entrez votre email",
+      "password": "Entrez votre mot de passe",
+      "comment": "Hey, entrez vos identifiants pour vous connecter",
+      "auth": "Se connecter avec Google",
+      "signIn": "Se connecter",
+      "noAccount": "Vous n'avez pas de compte?",
+      "forgotPassword": "Mot de passe oublié?",
+       "or": "ou"
+    },
+
+    "Sidebar": {
+  "matches": "Correspondances",
+  "messages": "Messages",
+  "notifications": "Notifications"
+}
+
+  }
+  

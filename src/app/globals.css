@@ -6,7 +6,13 @@
     cursor: grab;
   }
   
-  .drag-handle:active {
-    cursor: grabbing;
-  }
+.drag-handle:active {
+  cursor: grabbing;
+}
   
+  /* Custom Scrollbar */
+.scrollable-container::-webkit-scrollbar {
+  width: 8px; /* Adjust the width */
+}
+
+
