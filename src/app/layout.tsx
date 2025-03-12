@@ -7,6 +7,7 @@ import Providers from '@/store/Providers';
 import { ThemeProvider } from "@/components/theme/DarkMode";
 import { SessionWrapper } from "@/components/SessionWrapper";
 import SocketProvider from "@/providers/SocketProviders";
+import { QueryProvider } from "@/providers/TanStackQueryProvider";
 import { LoadingProvider } from "@/context/LoadingContext";
 import { ToastContainer } from 'react-toastify';
 import Call from '@/components/user/message/Call';
@@ -51,8 +52,9 @@ export default async function RootLayout({
             <body
               className={`${geistSans.variable} ${geistMono.variable} antialiased dark:bg-nightBlack `}
             >
-              <ToastContainer/>
+            <ToastContainer/>
               <NextIntlClientProvider messages={messages}>
+                <QueryProvider>
                 <Providers>
                   <ThemeProvider>
                   <SessionWrapper>
@@ -67,6 +69,7 @@ export default async function RootLayout({
                     </SessionWrapper>
                   </ThemeProvider>
                 </Providers>
+               </QueryProvider>
               </NextIntlClientProvider>
             </body>
           

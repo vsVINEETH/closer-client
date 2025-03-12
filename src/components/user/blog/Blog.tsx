@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFetch } from '@/hooks/fetchHooks/useUserFetch';
+import { useDebounce } from '@/hooks/helperHooks/useDebounce';
 
 interface Blog {
   id: string;
@@ -24,7 +25,6 @@ const Blog: React.FC = () => {
   const [sortOption, setSortOption] = useState<string>('Newest');
   const [filterOption] = useState<FilterOption>({ startDate: '', endDate: '', status: undefined });
 
-  const [debouncedSearchValue, setDebouncedSearchValue] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize] = useState<number>(3);
   const [totalPage, setTotal] = useState<number>(0);
@@ -32,31 +32,26 @@ const Blog: React.FC = () => {
   const {getBlogData} = useFetch();
   const router = useRouter();
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearchValue(searchValue);
-    }, 300);
+  const debouncedSearch = useDebounce(searchValue, 800);
 
-    return () => clearTimeout(handler);
-  }, [searchValue]);
-
-  const searchFilterSortParams = {
-    search: searchValue || '',
+  const searchFilterSortPagination = {
+    search: debouncedSearch || '',
     startDate: filterOption.startDate || '',
     endDate: filterOption.endDate || '',
-    status: filterOption.status,
+    status: filterOption.status ,
     sortColumn: 'createdAt',
     sortDirection: sortOption === 'Newest' ? 'desc' : 'asc',
     page: currentPage,
-    pageSize,
-  }
+    pageSize: pageSize, 
+  };
+
 
   useEffect(() => {
     fetchBlogs();
-  }, [debouncedSearchValue, filterOption, currentPage, pageSize, sortOption]);
+  }, [debouncedSearch, filterOption, currentPage, pageSize, sortOption]);
 
   const fetchBlogs = async () => {
-    const response = await getBlogData(searchFilterSortParams);
+    const response = await getBlogData(searchFilterSortPagination);
 
     if (response.data) {
       setBlogs(response.data.data.contents);

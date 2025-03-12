@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useCrudService } from "@/services/adminServices/crudService";
 import { errorToast } from "@/utils/toasts/toast";
-import { SubscriptionData } from "@/types/customTypes";
+import { SubscriptionData, SearchFilterSortParams } from "@/types/customTypes";
 import { useLoading } from "@/context/LoadingContext";
 
 
@@ -11,9 +11,9 @@ export const useSubscriptionCrud = () => {
     const {isLoading, setLoading} = useLoading()
     const [error, setError] = useState<string | null>(null);
 
-    const editSubscription = async (updatedSubscriptionData: SubscriptionData) => {
+    const editSubscription = async (updatedSubscriptionData: SubscriptionData, searchFilterSortParams: SearchFilterSortParams) => {
         setLoading(true);
-        const response = await updateSubscription(updatedSubscriptionData);
+        const response = await updateSubscription(updatedSubscriptionData, searchFilterSortParams);
 
         if(response.error){
          setError(response.error)
@@ -24,9 +24,9 @@ export const useSubscriptionCrud = () => {
         return response;
     }
 
-    const controllSubscriptionListing = async (subscriptionId: string) => {
+    const controllSubscriptionListing = async (subscriptionId: string, searchFilterSortParams: SearchFilterSortParams) => {
         setLoading(true);
-        const response = await listSubscription(subscriptionId);
+        const response = await listSubscription(subscriptionId, searchFilterSortParams);
 
         if(response.error){
          setError(response.error)

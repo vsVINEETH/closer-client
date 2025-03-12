@@ -7,6 +7,7 @@ import { useFetch } from '@/hooks/fetchHooks/useAdminFetch';
 import { useSubscriptionCrud } from '@/hooks/crudHooks/admin/useSubscriptionCrud';
 import NoContent from '../reusables/NoContent';
 import DataTable from '../reusables/Table';
+import { useDebounce } from '@/hooks/helperHooks/useDebounce';
 
 interface SubscriptionData {
     _id:string,
@@ -59,23 +60,26 @@ const SubscriptionTable: React.FC = () => {
     const {getSubscriptionData} = useFetch()
     const {editSubscription, controllSubscriptionListing} = useSubscriptionCrud();
 
+    const debouncedSearch = useDebounce(searchValue, 800);
+
+    const searchFilterSortPagination = {
+      search: debouncedSearch || '',
+      startDate: filterOption.startDate || '',
+      endDate: filterOption.endDate || '',
+      status: filterOption.status ,
+      sortColumn: sortConfig?.column || 'createdAt',
+      sortDirection: sortConfig?.direction || 'desc',
+      page: currentPage,
+      pageSize: pageSize, 
+    };
 
     useEffect(() => {
         fetchData();
-    }, [searchValue, filterOption, currentPage, pageSize, sortConfig]);
+    }, [debouncedSearch, filterOption, currentPage, pageSize, sortConfig]);
 
     const fetchData = async () => {
         try {
-            const response = await getSubscriptionData({
-                search: searchValue || '',
-                startDate: filterOption.startDate || '',
-                endDate: filterOption.endDate || '',
-                status: filterOption.status,
-                sortColumn: sortConfig?.column || 'createdAt',
-                sortDirection: sortConfig?.direction || 'asc',
-                page: currentPage,
-                pageSize: pageSize,
-            })
+            const response = await getSubscriptionData(searchFilterSortPagination)
             if(response.data){
                 const data = response.data;
                 setSubscriptionData(data.subscription)
@@ -87,7 +91,7 @@ const SubscriptionTable: React.FC = () => {
             console.error(error)
             errorToast(error);
         }
-    }
+    };
 
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -95,25 +99,32 @@ const SubscriptionTable: React.FC = () => {
 
             const confirm = await editConfirm();
             if(!confirm){return};
-            const response = await editSubscription(editFormData);
+            const response = await editSubscription(editFormData, searchFilterSortPagination);
 
             if(response.data){
                 setEditModal(false)
-                setResult(response.data);
+                const data = response.data;
+                setSubscriptionData(data.subscription)
+                setResult(data.subscription);
+                setTotal(data.total);
+                successToast('updated successfully')
+                setErrors({});
             }
         }
     };
 
     const handleListing = async (subscriptionId: string, index: number) => {
-        alert(subscriptionData[index].isListed)
         const confirm = await listUnlistConfirm(!subscriptionData[index]?.isListed);
         if(!confirm){ return };
-        const response = await controllSubscriptionListing(subscriptionId)
+        const response = await controllSubscriptionListing(subscriptionId, searchFilterSortPagination)
 
         if(response.data){
-            setSubscriptionData(response.data)
-            setResult(response.data);
-            successToast(response.data)
+            console.log(response.data)
+            const data = response.data;
+            setSubscriptionData(data.subscription)
+            setResult(data.subscription);
+            setTotal(data.total);
+            successToast('updated successfully')
         }
 
     }
@@ -207,6 +218,8 @@ const SubscriptionTable: React.FC = () => {
             newError.price = 'This field is required'
         }else if(isNaN(parseInt(editFormData.price))){
             newError.price = "It should be number"
+        }else if (parseInt(editFormData?.price ) <= 0){
+            newError.price = 'The price should be greaterthan zero';
         }
         setErrors(newError);
         return Object.keys(newError).length == 0

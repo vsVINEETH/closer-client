@@ -7,6 +7,7 @@ import { useFetch } from '@/hooks/fetchHooks/useAdminFetch';
 import { useUserCrud } from '@/hooks/crudHooks/admin/useUserCrud';
 import NoContent from '../reusables/NoContent';
 import DataTable from '../reusables/Table';
+import { useDebounce } from '@/hooks/helperHooks/useDebounce';
 
 interface UserData {
     id: string,
@@ -63,31 +64,34 @@ const UserTable: React.FC = () => {
 
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [pageSize] = useState<number>(2);
-    
     const [totalPage, setTotal] = useState<number>(0)
-    
     const [result, setResult] = useState<UserData[]>([]);
 
     const {getUsersData} = useFetch();
-    const {blockUser, banUser, unbanUser} = useUserCrud()
+    const {blockUser, banUser, unbanUser} = useUserCrud();
+
+    const debouncedSearch = useDebounce(searchValue, 800);
+
+    const searchFilterSortPagination = {
+        search: debouncedSearch || '',
+        startDate: filterOption.startDate || '',
+        endDate: filterOption.endDate || '',
+        status: filterOption.status ,
+        sortColumn: sortConfig?.column || 'createdAt',
+        sortDirection: sortConfig?.direction || 'desc',
+        page: currentPage,
+        pageSize: pageSize, 
+    };
+    
 
     useEffect(() => {
         fetchData();
-    }, [searchValue, filterOption, currentPage, pageSize, sortConfig]);
+    }, [debouncedSearch, filterOption, currentPage, pageSize, sortConfig]);
 
 
     const fetchData = async () => {
         try {
-            const response = await getUsersData({
-                search: searchValue || '',
-                startDate: filterOption.startDate || '',
-                endDate: filterOption.endDate || '',
-                status: filterOption.status,
-                sortColumn: sortConfig?.column || 'createdAt',
-                sortDirection: sortConfig?.direction || 'asc',
-                page: currentPage,
-                pageSize: pageSize,
-            });
+            const response = await getUsersData(searchFilterSortPagination);
 
             if(response.data){
                 const data = response.data;
@@ -104,10 +108,13 @@ const UserTable: React.FC = () => {
     const handleBlock = async (userId: string, index: number) => {
         const confirm = await blockConfirm(!result[index].isBlocked);
         if(!confirm){ return };
-        const response = await blockUser(userId);
+        const response = await blockUser(userId,searchFilterSortPagination);
 
         if(response.data){
-            setResult(response.data);
+            const data = response.data;
+            setUserData(data.users);
+            setResult(data.users);
+            setTotal(data.total)
         };
     };
 
@@ -116,11 +123,13 @@ const UserTable: React.FC = () => {
     const handleBanUser = async(userId: string, duration: string, index: number) => {
         const confirm = await banConfirm(!result[index].isBanned, duration);
         if(!confirm){return}
-        const response = await banUser(userId, duration);
+        const response = await banUser(userId, duration, searchFilterSortPagination);
 
         if(response.data){
-            setResult(response.data);
-            setUserData(response.data);
+            const data = response.data;
+            setUserData(data.users);
+            setResult(data.users);
+            setTotal(data.total)
             successToast("User banned");
         }
     }
@@ -128,11 +137,13 @@ const UserTable: React.FC = () => {
     const handleUnban = async(userId: string, index: number) => {
         const confirm = await banConfirm(!result[index].isBanned);
         if(!confirm){return}
-        const response = await unbanUser(userId)
+        const response = await unbanUser(userId, searchFilterSortPagination)
 
         if(response.data){
-            setResult(response.data);
-            setUserData(response.data);
+            const data = response.data;
+            setUserData(data.users);
+            setResult(data.users);
+            setTotal(data.total)
             successToast("User unbanned");
         }
     }

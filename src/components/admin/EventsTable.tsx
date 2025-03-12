@@ -8,6 +8,7 @@ import { useFetch } from '@/hooks/fetchHooks/useAdminFetch';
 import { useEventCrud } from '@/hooks/crudHooks/admin/useEventCrud';
 import DataTable from '../reusables/Table';
 import NoContent from '../reusables/NoContent';
+import { useDebounce } from '@/hooks/helperHooks/useDebounce';
 
 interface EventData {
     _id: string,
@@ -104,33 +105,34 @@ const EventTable: React.FC = () => {
 
     const [result, setResult] = useState<EventData[]>([]);
     const {getEventData} = useFetch();
-    const {createEvent, deleteExistingEvent, editEvent} = useEventCrud()
+    const {createEvent, deleteExistingEvent, editEvent} = useEventCrud();
 
+    const debouncedSearch = useDebounce(searchValue, 800);
 
-    
+    const searchFilterSortPagination = {
+        search: debouncedSearch || '',
+        startDate: filterOption.startDate || '',
+        endDate: filterOption.endDate || '',
+        status: filterOption.status ,
+        sortColumn: sortConfig?.column || 'createdAt',
+        sortDirection: sortConfig?.direction || 'desc',
+        page: currentPage,
+        pageSize: pageSize, 
+        };
 
     useEffect(() => {
         fetchData();
-    }, [searchValue, filterOption, currentPage, pageSize, sortConfig]);
+    }, [debouncedSearch, filterOption, currentPage, pageSize, sortConfig]);
 
     const fetchData = async () => {
         try {
-            const response = await getEventData({
-                search: searchValue || '',
-                startDate: filterOption.startDate || '',
-                endDate: filterOption.endDate || '',
-                status: filterOption.status,
-                sortColumn: sortConfig?.column || 'createdAt',
-                sortDirection: sortConfig?.direction || 'asc',
-                page: currentPage,
-                pageSize: pageSize,
-            })
+            const response = await getEventData(searchFilterSortPagination)
 
             if(response.data){
                 const data = response.data;
                 setEventData(data.events);
                 setResult(data.events);
-                setTotal(data.total)
+                setTotal(data.total);
             }
             
         } catch (error) {
@@ -158,10 +160,13 @@ const EventTable: React.FC = () => {
             eventData.append('slots', createFormData.slots.toString());
             eventData.append('price', createFormData.price.toString());
             
-            const response = await createEvent(eventData)
+            const response = await createEvent(eventData, searchFilterSortPagination)
 
             if(response.data){
-                setResult(response.data)
+                const data = response.data;
+                setEventData(data.events);
+                setResult(data.events);
+                setTotal(data.total);
                 setCreateModal(false);
                 setImagePreviews([])
                 successToast('Successfully created')
@@ -173,10 +178,13 @@ const EventTable: React.FC = () => {
     const handleDelete = async (eventId: string) => {
         const confirm = await deleteConfirm();
         if(!confirm){return};
-        const response = await deleteExistingEvent(eventId);
+        const response = await deleteExistingEvent(eventId, searchFilterSortPagination);
 
         if(response.data){
-            setResult(response.data)
+            const data = response.data;
+            setEventData(data.events);
+            setResult(data.events);
+            setTotal(data.total);
         };
     };
 
@@ -194,11 +202,14 @@ const EventTable: React.FC = () => {
 
         const confirm = await editConfirm();
         if(!confirm ){return}
-        const response = await editEvent(editFormData ? editFormData : {})
+        const response = await editEvent(editFormData ? editFormData : {}, searchFilterSortPagination)
 
         if(response.data){
             setEditModal(false)
-            setResult(response.data);
+            const data = response.data;
+            setEventData(data.events);
+            setResult(data.events);
+            setTotal(data.total);
             successToast('Event updated successfully');
         }
         }

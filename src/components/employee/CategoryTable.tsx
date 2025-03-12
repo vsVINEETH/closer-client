@@ -7,6 +7,7 @@ import { useCategoryCrud } from '@/hooks/crudHooks/employee/useCategoryCrud';
 import { useFetch } from '@/hooks/fetchHooks/useEmployeFetch';
 import NoContent from '../reusables/NoContent';
 import DataTable from '../reusables/Table';
+import { useDebounce } from '@/hooks/helperHooks/useDebounce';
 
 interface CategoryData {
     id: string,
@@ -61,24 +62,28 @@ const CategoryTable: React.FC = () => {
     const [editModal, setEditModal] = useState<boolean>(false);
     const [editFormData, setEditFormData] = useState<CategoryData | null>(null);
 
+    const debouncedSearch = useDebounce(searchValue, 800);
+
+    const searchFilterSortPagination = {
+      search: debouncedSearch || '',
+      startDate: filterOption.startDate || '',
+      endDate: filterOption.endDate || '',
+      status: filterOption.status ,
+      sortColumn: sortConfig?.column || 'createdAt',
+      sortDirection: sortConfig?.direction || 'desc',
+      page: currentPage,
+      pageSize: pageSize, 
+    };
+
 
     useEffect(() => {
         fetchData();
-    }, [searchValue, filterOption, currentPage, pageSize, sortConfig]);
+    }, [debouncedSearch, filterOption, currentPage, pageSize, sortConfig]);
 
 
     const fetchData = async () => {
         try {
-            const response = await getCategoryData({
-                search: searchValue || '',
-                startDate: filterOption.startDate || '',
-                endDate: filterOption.endDate || '',
-                status: filterOption.status,
-                sortColumn: sortConfig?.column || 'createdAt',
-                sortDirection: sortConfig?.direction || 'asc',
-                page: currentPage,
-                pageSize: pageSize,
-            })
+            const response = await getCategoryData(searchFilterSortPagination)
 
             if(response.data){
                 const data = response.data;
@@ -97,11 +102,14 @@ const CategoryTable: React.FC = () => {
         if(validation()){
             const confirm = await createConfirm();
             if(!confirm){return};
-            const response = await createCategory(createFormData)
+            const response = await createCategory(createFormData, searchFilterSortPagination)
 
             if(response.data){
                 setCreateModal(false);
-                fetchData()
+                const data = response.data;
+                setCategoryData(data.category);
+                setResult(data.category);
+                setTotal(data.total)
                 successToast('successfully created');
             }
         }
@@ -111,11 +119,13 @@ const CategoryTable: React.FC = () => {
     const handleListing = async (categoryId: string, index: number) => {
         const confirm = await listUnlistConfirm(!categoryData[index].isListed);
         if(!confirm){return}
-        const response = await controllCategoryListing(categoryId)
+        const response = await controllCategoryListing(categoryId, searchFilterSortPagination)
 
         if(response.data){
-            setResult(response.data);
-            successToast(response.data)
+            const data = response.data;
+             setCategoryData(data.category);
+            setResult(data.category);
+            setTotal(data.total)
         }
     }
 
@@ -243,11 +253,14 @@ const CategoryTable: React.FC = () => {
         if (editValidation()) {
          const confirm = await editConfirm();
          if(!confirm){ return };
-         const response = await editCategory(editFormData);
+         const response = await editCategory(editFormData, searchFilterSortPagination);
 
         if(response.data){
             setEditModal(false)
-            setResult(response.data);
+            const data = response.data;
+            setCategoryData(data.category);
+            setResult(data.category);
+            setTotal(data.total)
         }
         }
       };

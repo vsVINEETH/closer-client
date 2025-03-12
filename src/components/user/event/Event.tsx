@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Coins, Hand } from 'lucide-react';
 import { useFetch } from '@/hooks/fetchHooks/useAdminFetch';
-
+import { useDebounce } from '@/hooks/helperHooks/useDebounce';
 interface Event {
   _id: string;
   title: string;
@@ -30,7 +30,6 @@ const Event: React.FC = () => {
 
   const [filterOption] = useState<FilterOption>({ startDate: '', endDate: '', status: undefined });
   
-  const [debouncedSearchValue, setDebouncedSearchValue] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState<number>(3);
   const [totalPage, setTotal] = useState<number>(0);
@@ -38,32 +37,25 @@ const Event: React.FC = () => {
   const {getEventData} = useFetch();
   const router = useRouter();
 
+  const debouncedSearch = useDebounce(searchValue, 800);
 
-  const searchFilterSortParams = {
-    search: searchValue || '',
+  const searchFilterSortPagination = {
+    search: debouncedSearch || '',
     startDate: filterOption.startDate || '',
     endDate: filterOption.endDate || '',
-    status: filterOption.status,
+    status: filterOption.status ,
     sortColumn: 'createdAt',
     sortDirection: sortOption === 'Newest' ? 'desc' : 'asc',
     page: currentPage,
-    pageSize,
+    pageSize: pageSize, 
   };
 
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearchValue(searchValue);
-    }, 300);
-
-    return () => clearTimeout(handler);
-  }, [searchValue]);
-
-  useEffect(() => {
     fetchEvents();
-  }, [debouncedSearchValue, filterOption, currentPage, pageSize, sortOption]);
+  }, [debouncedSearch, filterOption, currentPage, pageSize, sortOption]);
 
   async function fetchEvents () {
-    const response = await getEventData(searchFilterSortParams)
+    const response = await getEventData(searchFilterSortPagination)
     if (response.data) {
       setEvents(response.data.events);
       setTotal(response.data.total)

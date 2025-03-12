@@ -3,15 +3,16 @@ import { useState } from "react";
 import { useCrudService } from "@/services/employeServices/crudService";
 import { errorToast } from "@/utils/toasts/toast";
 import { useLoading } from "@/context/LoadingContext";
+import { SearchFilterSortParams } from "@/types/customTypes";
 
 export const useContentCrud = () => {
     const {postContent, listContent, deleteContent, updateContent}  = useCrudService()
     const {isLoading, setLoading} = useLoading()
     const [error, setError] = useState<string | null>(null);
 
-    const createContent = async (contentData: FormData) => {
+    const createContent = async (contentData: FormData, searchFilterSortParams: SearchFilterSortParams) => {
         setLoading(true);
-        const response = await postContent(contentData);
+        const response = await postContent(contentData, searchFilterSortParams);
 
         if(response.error){
             setError(response.error)
@@ -22,9 +23,9 @@ export const useContentCrud = () => {
         return response;
     };
 
-    const controllContentListing = async (contentId: string) => {
+    const controllContentListing = async (contentId: string, searchFilterSortParams: SearchFilterSortParams) => {
         setLoading(true);
-        const response = await listContent(contentId);
+        const response = await listContent(contentId, searchFilterSortParams);
 
         if(response.error){
             setError(response.error)
@@ -36,9 +37,9 @@ export const useContentCrud = () => {
     };
 
 
-    const deleteExistingContent = async (contentId: string) => {
+    const deleteExistingContent = async (contentId: string, searchFilterSortParams: SearchFilterSortParams) => {
         setLoading(true);
-        const response = await deleteContent(contentId);
+        const response = await deleteContent(contentId, searchFilterSortParams);
 
         if(response.error){
             setError(response.error)
@@ -49,9 +50,9 @@ export const useContentCrud = () => {
         return response;
     };
 
-    const editContent = async (updatedContentData: any | object) => {
+    const editContent = async (updatedContentData: any | object, searchFilterSortParams: SearchFilterSortParams) => {
         setLoading(true);
-        const response = await updateContent(updatedContentData);
+        const response = await updateContent(updatedContentData, searchFilterSortParams);
 
         if(response.error){
             setError(response.error)

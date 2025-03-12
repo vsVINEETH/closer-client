@@ -90,7 +90,7 @@ const DataTable = <T extends Record<string, any>>({
                     : 'bg-red-500/20 text-red-600 dark:bg-red-400/20 dark:text-red-300'
                 }`}
                 onClick={() => {
-                  const id = (item as any).id || '';
+                  const id = item.id || item._id;
                   const index = data.indexOf(item);
                   onListed(id, index);
                 }}
