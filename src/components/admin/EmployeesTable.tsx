@@ -7,6 +7,7 @@ import { useFetch } from '@/hooks/fetchHooks/useAdminFetch';
 import { useEmployeeCrud } from '@/hooks/crudHooks/admin/useEmployeeCrud';
 import NoContent from '../reusables/NoContent';
 import DataTable from '../reusables/Table';
+import { useDebounce } from '@/hooks/helperHooks/useDebounce';
 
 interface EmployeeData {
     id: string,
@@ -61,40 +62,40 @@ const EmployeesTable: React.FC = () => {
 
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [pageSize] = useState<number>(3);
-
     const [totalPage, setTotal] = useState<number>(0)
-
     const [result, setReasult] = useState<EmployeeData[]>([]);
 
-    const {createEmployee, blockEmployee} = useEmployeeCrud()
+    const {createEmployee, blockEmployee} = useEmployeeCrud();
     const {getEmployeeData} = useFetch();
+
+    const debouncedSearch = useDebounce(searchValue, 800);
+
+    const searchFilterSortPagination = {
+        search: debouncedSearch || '',
+        startDate: filterOption.startDate || '',
+        endDate: filterOption.endDate || '',
+        status: filterOption.status ,
+        sortColumn: sortConfig?.column || 'createdAt',
+        sortDirection: sortConfig?.direction || 'desc',
+        page: currentPage,
+        pageSize: pageSize, 
+      };
 
     useEffect(() => {
         fetchData();
-    }, [searchValue, filterOption, currentPage, pageSize, sortConfig]);
+    }, [debouncedSearch, filterOption, currentPage, pageSize, sortConfig]);
 
     const fetchData = async () => {
         try {
-            const response = await getEmployeeData({
-                search: searchValue || '',
-                startDate: filterOption.startDate || '',
-                endDate: filterOption.endDate || '',
-                status: filterOption.status,
-                sortColumn: sortConfig?.column || 'createdAt',
-                sortDirection: sortConfig?.direction || 'asc',
-                page: currentPage,
-                pageSize: pageSize,
-            });
-
+            const response = await getEmployeeData(searchFilterSortPagination);
             if(response.data){
                 const data = response.data;
                 setReasult(data.employee);
                 setTotal(data.total)
-            }
-
+            };
         } catch (error) {
            errorToast(error);
-        }
+        };
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -102,7 +103,7 @@ const EmployeesTable: React.FC = () => {
         if(validation()){
             const confirm = await createConfirm();
             if(!confirm){return};
-            const response = await createEmployee(createFormData);
+            const response = await createEmployee(createFormData, searchFilterSortPagination);
 
             if(response.data){
                 successToast('Employee created')
@@ -117,13 +118,13 @@ const EmployeesTable: React.FC = () => {
         
         const confirm = await blockConfirm(!result[index].isBlocked);
         if(!confirm){return}
-        const response = await blockEmployee(employeeId)
+        const response = await blockEmployee(employeeId, searchFilterSortPagination)
 
         if(response.data){
             successToast("Employee has been blocked");
             //setReasult(response.data.employee);
             fetchData()
-        }
+        };
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,7 +133,7 @@ const EmployeesTable: React.FC = () => {
             ...prev,
             [name]: value
         }))
-        setErrors({})
+        setErrors({});
     }
     
     const handleCancel = () => {

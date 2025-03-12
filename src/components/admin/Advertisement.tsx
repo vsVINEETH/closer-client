@@ -8,6 +8,9 @@ import { useFetch } from '@/hooks/fetchHooks/useAdminFetch';
 import { useAdvertisementCrud } from '@/hooks/crudHooks/admin/useAdvertisementCrud';
 import NoContent from '../reusables/NoContent';
 import DataTable from '../reusables/Table';
+import { useDebounce } from '@/hooks/helperHooks/useDebounce';
+import {useThrottle} from '@/hooks/helperHooks/useThrottle';
+import { useQuery } from '@tanstack/react-query';
 
 interface AdvertisementData {
     id: string,
@@ -101,32 +104,34 @@ const AdvertisementTable: React.FC = () => {
     const {getAdvertisementData} = useFetch();
     const {createAd, controllAdListing, editAd, deleteAd} = useAdvertisementCrud()
 
+    const debouncedSearch = useDebounce(searchValue, 800);
+    // const throttledFilters = useThrottle({filterOption, currentPage, pageSize, sortConfig}, 300)
+
     const searchFilterSortPagination = {
-      search: searchValue || '',
+      search: debouncedSearch || '',
       startDate: filterOption.startDate || '',
       endDate: filterOption.endDate || '',
       status: filterOption.status ,
       sortColumn: sortConfig?.column || 'createdAt',
       sortDirection: sortConfig?.direction || 'desc',
-      page: currentPage,
+      page:currentPage,
       pageSize: pageSize, 
-    }
+    };
+
 
     useEffect(() => {
         fetchData();
-        
-    },[searchValue, filterOption, currentPage, pageSize, sortConfig]);
+    },[debouncedSearch, filterOption, currentPage, pageSize, sortConfig]);
 
     const fetchData = async () => {
         try {
             const response = await getAdvertisementData(searchFilterSortPagination);
-
             if(response.data){
-                const data = response.data;
-                setAdvertisementData(data.advertisement);
-                setResult(data.advertisement);
-                setTotal(data.total);
-            }
+              const advertisementData = response.data;
+              setAdvertisementData(advertisementData.advertisement);
+              setResult(advertisementData.advertisement);
+              setTotal(advertisementData.total);
+            };
             
         } catch (error) {
             console.error(error);
@@ -151,10 +156,10 @@ const AdvertisementTable: React.FC = () => {
             const response = await createAd(advertisementData, searchFilterSortPagination);
             
             if(response.data){
-              console.log(response.data)
-                setAdvertisementData(response.data.data.advertisement)
-                setResult(response.data.data.advertisement);
-                setTotal(response.data.data.total)
+                const advertisementData = response.data.data
+                setAdvertisementData(advertisementData.advertisement);
+                setResult(advertisementData.advertisement);
+                setTotal(advertisementData.total);
                 setCreateModal(false);
                 setImagePreviews([])
                 successToast('Successfully created')
@@ -167,10 +172,12 @@ const AdvertisementTable: React.FC = () => {
     const handleListing = async (advertisementId: string, index: number) => {
       const confirm = await listUnlistConfirm(!advertisementData[index].isListed);
       if(!confirm) { return }
-      const response = await controllAdListing(advertisementId);
+      const response = await controllAdListing(advertisementId, searchFilterSortPagination);
       if(response.data){
-          setAdvertisementData(response.data)
-          setResult(response.data);
+        const advertisementData = response.data.data
+        setAdvertisementData(advertisementData.advertisement);
+        setResult(advertisementData.advertisement);
+        setTotal(advertisementData.total);
       }
 
     }
@@ -179,26 +186,31 @@ const AdvertisementTable: React.FC = () => {
       const confirm = await deleteConfirm();
      
         if(!confirm){return}
-        const response = await deleteAd(advertisementId)
+        const response = await deleteAd(advertisementId, searchFilterSortPagination)
 
         if(response.data){
-            setAdvertisementData(response.data)
-            setResult(response.data)
-            setTotal(response.data.total)
+          const advertisementData = response.data.data
+          setAdvertisementData(advertisementData.advertisement);
+          setResult(advertisementData.advertisement);
+          setTotal(advertisementData.total);
         }
     }
 
     const handleEditSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      const confirm = await editConfirm();
-      if(!confirm){ return }
+
 
       if (editValidation()) {
-       const response = await editAd(editFormData ? editFormData : {});
+        const confirm = await editConfirm();
+        if(!confirm){ return } 
+       const response = await editAd(editFormData ? editFormData : {}, searchFilterSortPagination);
 
       if(response.data){
           setEditModal(false)
-          setResult(response.data);
+          const advertisementData = response.data.data
+          setAdvertisementData(advertisementData.advertisement);
+          setResult(advertisementData.advertisement);
+          setTotal(advertisementData.total);
       }
       }
     };
@@ -215,7 +227,8 @@ const AdvertisementTable: React.FC = () => {
     const handleCancel = () => {
         setCreateModal(false);
         setErrors({});
-        setImagePreviews([])
+        setImagePreviews([]);
+        setFilterOption({startDate: '', endDate: '', status: undefined})
     }
 
     const validation = () => {
@@ -244,8 +257,9 @@ const AdvertisementTable: React.FC = () => {
 
     const editValidation = () => {
         const newErrors: Errors = {};
-
+        
         if(!editFormData?.title.trim()){
+        
             newErrors.title = 'This field is required'
         }
 
@@ -293,7 +307,7 @@ const AdvertisementTable: React.FC = () => {
         
         if (!validateDateRange(start, end)) {
             return;
-        }
+        };
         setFilterModal(false);
         setFilterStatus(true);
     };
@@ -807,6 +821,7 @@ const AdvertisementTable: React.FC = () => {
                     className="w-full border rounded-md px-3 py-2 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
                     required
                 />
+                {errors?.title && <span className="text-red-500 text-xs">{errors.title}</span>}
                 </div>
 
                 {/* Subtitle Input */}
@@ -820,6 +835,7 @@ const AdvertisementTable: React.FC = () => {
                     className="w-full border rounded-md px-3 py-2 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
                     required
                 />
+                {errors?.subtitle && <span className="text-red-500 text-xs">{errors.subtitle}</span>}
                 </div>
 
                 {/* Content Textarea */}
@@ -832,6 +848,7 @@ const AdvertisementTable: React.FC = () => {
                     className="w-full border rounded-md px-3 py-2 h-24 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition"
                     required
                 />
+                {errors?.content && <span className="text-red-500 text-xs">{errors.content}</span>}
                 </div>
 
                 {/* Buttons */}

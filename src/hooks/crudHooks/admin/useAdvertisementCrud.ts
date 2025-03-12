@@ -24,9 +24,9 @@ export const useAdvertisementCrud = () => {
         return response;
     };
 
-    const controllAdListing = async (advertisementId: string) => {
+    const controllAdListing = async (advertisementId: string, searchFilterSortParams: SearchFilterSortParams) => {
         setLoading(true);
-        const response = await listAdvertisement(advertisementId);
+        const response = await listAdvertisement(advertisementId, searchFilterSortParams);
 
         if(response.error){
          setError(response.error)
@@ -37,9 +37,9 @@ export const useAdvertisementCrud = () => {
         return response;
     };
 
-    const deleteAd = async (advertisementId: string) => {
+    const deleteAd = async (advertisementId: string, searchFilterSortParams: SearchFilterSortParams) => {
         setLoading(true);
-        const response = await deleteAdvertisement(advertisementId);
+        const response = await deleteAdvertisement(advertisementId, searchFilterSortParams);
 
         if(response.error){
          setError(response.error)
@@ -50,9 +50,9 @@ export const useAdvertisementCrud = () => {
         return response;
     };
 
-    const editAd = async (updateAdvertisementData: AdvertisementData | object) => {
+    const editAd = async (updateAdvertisementData: AdvertisementData | object, searchFilterSortParams: SearchFilterSortParams) => {
         setLoading(true);
-        const response = await updateAdvertisement(updateAdvertisementData);
+        const response = await updateAdvertisement(updateAdvertisementData, searchFilterSortParams);
 
         if(response.error){
          setError(response.error)

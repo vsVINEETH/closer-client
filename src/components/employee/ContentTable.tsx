@@ -8,6 +8,7 @@ import { useContentCrud } from '@/hooks/crudHooks/employee/useContentCrud';
 import { useFetch } from '@/hooks/fetchHooks/useEmployeFetch';
 import NoContent from '../reusables/NoContent';
 import DataTable from '../reusables/Table';
+import { useDebounce } from '@/hooks/helperHooks/useDebounce';
 
 interface ContentData {
     id: string,
@@ -111,29 +112,32 @@ const ContentTable: React.FC = () => {
 
     const [result, setResult] = useState<ContentData[]>([]);
     const {createContent, controllContentListing, deleteExistingContent, editContent } = useContentCrud();
-    const {getContentData} = useFetch()
+    const {getContentData} = useFetch();
+
+    const debouncedSearch = useDebounce(searchValue, 800);
+
+    const searchFilterSortPagination = {
+        search: debouncedSearch || '',
+        startDate: filterOption.startDate || '',
+        endDate: filterOption.endDate || '',
+        status: filterOption.status ,
+        sortColumn: sortConfig?.column || 'createdAt',
+        sortDirection: sortConfig?.direction || 'desc',
+        page: currentPage,
+        pageSize: pageSize, 
+    };
 
     useEffect(() => {
      fetchData();
-    }, [searchValue, filterOption, currentPage, pageSize, sortConfig]);
+    }, [debouncedSearch, filterOption, currentPage, pageSize, sortConfig]);
 
     const fetchData = async () => {
         try {
-            const response = await getContentData({
-                search: searchValue || '',
-                startDate: filterOption.startDate || '',
-                endDate: filterOption.endDate || '',
-                status: filterOption.status,
-                sortColumn: sortConfig?.column || 'createdAt',
-                sortDirection: sortConfig?.direction || 'asc',
-                page: currentPage,
-                pageSize: pageSize,
-            })
+            const response = await getContentData(searchFilterSortPagination)
 
             if(response.data){
                 const data = response.data.data;
                 const categoryData = response.data.category;
-                console.log(data)
                 seCategory(categoryData.category);
                 setContentData(data.contents);
                 setResult(data.contents);
@@ -159,10 +163,14 @@ const ContentTable: React.FC = () => {
                 contentData.append('images', image); // 'images' is the field name you expect in the backend
             });
 
-            const response = await createContent(contentData)
+            const response = await createContent(contentData, searchFilterSortPagination)
 
             if(response.data){
-                setResult(response.data.data)
+                const data = response.data.data;
+                setContentData(data.contents);
+                setResult(data.contents);
+                setTotal(data.total);
+
                 setCreateModal(false);
                 successToast('Successfully created');
             }
@@ -186,11 +194,15 @@ const ContentTable: React.FC = () => {
     const handleListing = async (contentId: string, index: number) => {
         const confirm = await listUnlistConfirm(!contentData[index].isListed);
         if(!confirm){return};
-        const response = await controllContentListing(contentId);
+        const response = await controllContentListing(contentId, searchFilterSortPagination);
 
         if(response.data){
-            setResult(response.data);
-            setContentData(response.data)
+            const data = response.data.data;
+            const categoryData = response.data.category;
+            seCategory(categoryData.category);
+            setContentData(data.contents);
+            setResult(data.contents);
+            setTotal(data.total);
         }
 
     }
@@ -198,10 +210,13 @@ const ContentTable: React.FC = () => {
     const handleDelete = async (contentId: string) => {
         const confirm = await  deleteConfirm();
         if(!confirm){ return };
-        const response = await deleteExistingContent(contentId);
+        const response = await deleteExistingContent(contentId, searchFilterSortPagination);
 
         if(response.data){
-         setResult(response.data)
+            const data = response.data.data;
+            setContentData(data.contents);
+            setResult(data.contents);
+            setTotal(data.total);
         };
     };
 
@@ -427,11 +442,14 @@ const ContentTable: React.FC = () => {
           const confirm = await editConfirm();
           if(!confirm) {return}
           
-         const response = await editContent(editFormData)
+         const response = await editContent(editFormData, searchFilterSortPagination)
 
         if(response.data){
             setEditModal(false)
-            setResult(response.data);
+            const data = response.data.data;
+            setContentData(data.contents);
+            setResult(data.contents);
+            setTotal(data.total);
         }
         }
     };
