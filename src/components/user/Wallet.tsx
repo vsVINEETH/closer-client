@@ -132,11 +132,9 @@ const Wallet: React.FC = () => {
       if(!user?.id) return
       const response = await getWalletData(user.id)
       if (response.data) {
-        setBalance(response.data.balance);
-        setHistory(response.data.transactions);
-      } else if (response.error) {
-        errorToast(response.error);
-      }
+        setBalance(response.data.balance || 0);
+        setHistory(response.data.transactions || []);
+      };
     };
     
   const validate = (): boolean => {
@@ -179,7 +177,7 @@ const Wallet: React.FC = () => {
         // animate={{ scale: [1, 1.1, 1] }} 
         // transition={{ repeat: Infinity, duration: 2 }}
       >
-        Balance: ₹{balance.toFixed(2)}
+        Balance: ₹{balance && balance.toFixed(2)}
       </p>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input

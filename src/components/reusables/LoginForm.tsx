@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { ChangeEvent } from "react";
 import {useForm} from 'react-hook-form';
 import Link from "next/link";
 import {z} from 'zod';
@@ -19,7 +19,7 @@ interface LoginProps {
 
 const LoginForm: React.FC<LoginProps> = ({ htmlFor }) => {
       const t = useTranslations('Login');
-      const { register, handleSubmit, formState: { errors }, clearErrors} = useForm<LoginCrendentialsTypes>({ resolver: zodResolver(loginSchema),});
+      const { register, handleSubmit, formState: { errors }, clearErrors, setValue} = useForm<LoginCrendentialsTypes>({ resolver: zodResolver(loginSchema),});
       let useAuth;
       if(htmlFor === 'user'){
         useAuth = userUseAuth
@@ -35,9 +35,17 @@ const LoginForm: React.FC<LoginProps> = ({ htmlFor }) => {
         await handleLogin(loginCrendentials)
     };
   
-    const handleChange = () => {
-        clearErrors();
-      };
+    type FieldName = "email" | "password";
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { name, value } = e.target;
+      
+      if (name === "email" || name === "password") {
+        setValue(name as FieldName, value);
+        clearErrors(name); 
+      }
+    };
+    
 
       return (
         <div className="w-full flex-1 mt-8">
@@ -90,7 +98,7 @@ const LoginForm: React.FC<LoginProps> = ({ htmlFor }) => {
                 href="/user/signup"
                 className="text-customPink font-semibold dark:text-lightGray "
               >
-                {t('signIn')}
+                {t('signUp')}
                 
               </Link>
               

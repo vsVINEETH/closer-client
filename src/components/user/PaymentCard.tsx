@@ -74,9 +74,6 @@ const PaymentCard: React.FC = () => {
         isPrime: user?.prime?.isPrime
       })
 
-      if(response.error){
-        warnToast(response.error)
-      }
       if(response.data){
         await handlePaymentSuccess(true);
         const { isPrime, primeCount, startDate, endDate } = response.data.prime;

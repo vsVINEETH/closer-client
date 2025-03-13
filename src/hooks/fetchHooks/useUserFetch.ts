@@ -244,7 +244,7 @@ export const useFetch = () => {
         const response = await fetchWalletData(userId);
         if(response.error){
          setError(response.error)
-         errorToast(response.error);
+         //errorToast(response.error);
         }
         setLoading(false);
         return response; 

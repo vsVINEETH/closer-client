@@ -105,7 +105,7 @@ const SideBar: React.FC = () => {
           _id: receivedMessage._id ?? "",
           createdAt: receivedMessage.createdAt,
           isRead: currentUrl === expectedUrl ? true : receivedMessage.isRead,
-          message: receivedMessage.message,
+          message: receivedMessage.type === 'text' ? receivedMessage.message : '🎙',
           receiver: receiverId,
           sender: senderId,
           type: receivedMessage.type,
@@ -161,7 +161,7 @@ const SideBar: React.FC = () => {
   useEffect(() => {
     fetchData();
    localStorage.setItem('currentTab', activeTab);
-   localStorage.setItem('matches', JSON.stringify(matches));
+  // localStorage.setItem('matches', JSON.stringify(matches));
   }, [activeTab]);
 
   useEffect(() => {
@@ -221,6 +221,8 @@ const SideBar: React.FC = () => {
     const response = await getMessages(userInfo?.id)
 
     if (response.data) {
+      setMatches(response.data.matches.matches)
+      console.log(response.data.messages)
       setMessages(response.data.messages);
     }
   };
@@ -230,6 +232,7 @@ const SideBar: React.FC = () => {
     const response = await getMatches(userInfo.id);
 
     if (response.data) {
+      console.log(response.data.matches)
       setMatches(response.data.matches);
     }
   };
@@ -339,7 +342,7 @@ const SideBar: React.FC = () => {
                       val.pair === `${match._id}-${userInfo?.id}` ||
                       val.pair === `${userInfo?.id}-${match._id}`
                   );
-      
+
                   const latestMessage =
                     relevantMessages.length > 0
                       ? relevantMessages[relevantMessages.length - 1]
@@ -355,7 +358,7 @@ const SideBar: React.FC = () => {
                       exit={{ opacity: 0, y: -10 }}
                       transition={{ duration: 0.3 }}
                       className="flex items-center justify-between p-4 bg-gray-100 dark:bg-darkGray rounded-lg shadow-md transition-all duration-200 hover:bg-gray-200 dark:hover:bg-black cursor-pointer"
-                      onClick={() => router.push(`/user/chat/?id=${match._id}`)}
+                      onClick={() => router.replace(`/user/chat/?id=${match._id}`)}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
@@ -370,7 +373,7 @@ const SideBar: React.FC = () => {
                             {match?.username}
                           </p>
                           <p className="text-sm text-gray-600 dark:text-gray-400 truncate w-40">
-                            {lastMessage ? lastMessage[lastMessage.length - 1]?.message : "Tap to start conversation"}
+                            {lastMessage ? lastMessage[lastMessage.length - 1]?.type === 'text' ? lastMessage[lastMessage.length - 1]?.message : lastMessage[lastMessage.length - 1]?.type === 'audio' ? 'audio' : 'call' :  "Tap to start conversation"}
                           </p>
                         </div>
                       </div>
@@ -438,7 +441,8 @@ const SideBar: React.FC = () => {
                 <div className="flex space-x-2">
                   <motion.button
                     className="px-2 py-1 text-sm font-medium text-white bg-customPink rounded hover:bg-customPink"
-                    onClick={() => router.push(`/user/chat/?id=${match._id}`)}
+                    onClick={() => router.replace(`/user/chat/?id=${match._id}`)}
+
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                   >
@@ -492,7 +496,7 @@ const SideBar: React.FC = () => {
       {/* Profile Section */}
       <div className="flex items-center gap-3 p-4 border-b border-gray-200">
         <motion.img
-          src={userInfo?.image && userInfo?.image[0]}
+          src={userInfo?.image && userInfo?.image[1]}
           alt="User Avatar"
           className="w-10 h-10 rounded-full flex items-center justify-center"
           initial={{ opacity: 0, scale: 0.8 }}

@@ -87,7 +87,6 @@ export const useSecurity = () => {
         const response = await verifyOTPSignup(userEmail, OTP);
         if(response.error){
             setError(response.error)
-            errorToast(response.error);
         }
         setLoading(false);
         return response; 

@@ -9,7 +9,7 @@ import { errorToast } from "@/utils/toasts/toast";
 import { useLoading } from "@/context/LoadingContext";
 
 export const useAuth = () => {
-    const {login,updatePassword,verifyOTP, resendOTP, logout} = useAuthService();
+    const {login,updatePassword, logout} = useAuthService();
     
     const {isLoading, setLoading} = useLoading()
     const [error, setError] = useState<string | null>(null);
@@ -49,28 +49,7 @@ export const useAuth = () => {
       return response;
     };
 
-    const validateOTP = async (employeeEmail: string, OTP: string[]) => {
-      setLoading(true);
-      const response = await verifyOTP(employeeEmail, OTP);
-      if(response.error){
-       setError(response.error);
-       errorToast(response.error);
-      }
-      setLoading(false);
-      return response;
-    };
 
-    const resendVerificationCode = async (employeeEmail: string) => {
-      setLoading(true);
-      const response = await resendOTP(employeeEmail);
-      if(response.error){
-       setError(response.error);
-       errorToast(response.error);
-      }
-      setLoading(false);
-      return response;
-    }
-    
     const handleLogout = async () => {
         setLoading(true);
         await logout();
@@ -79,5 +58,5 @@ export const useAuth = () => {
         setLoading(false);
     };
 
-    return {handleLogin, handleLogout, changePassword, validateOTP, resendVerificationCode, isLoading, error};
+    return {handleLogin, handleLogout, changePassword, isLoading, error};
 } 

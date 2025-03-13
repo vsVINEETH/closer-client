@@ -186,7 +186,8 @@ const SetupForm: React.FC = () => {
       const response = await setupAccount(formData);
 
       if(response.data){
-       const user = response.data;
+        
+       const user = response.data.user;
         dispatch(
           login({ id:user.id, username:user.username, 
             email: user.email, image: user.image, phone: user.phone, 
@@ -194,7 +195,7 @@ const SetupForm: React.FC = () => {
             interestedIn: user.interestedIn,
           })
         );
-        successToast('Account created successfully')
+        successToast('Account created successfully');
         router.push('/user/home');
       }
 

@@ -5,7 +5,7 @@ import {  Cake, Pencil, Heart, Phone } from "lucide-react"
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store'
 import { successToast } from '@/utils/toasts/toast'
-import { editConfirm } from '@/utils/sweet_alert/sweetAlert'
+import { deleteConfirm, editConfirm } from '@/utils/sweet_alert/sweetAlert'
 import { useFetch } from '@/hooks/fetchHooks/useUserFetch';
 import useAxios from '@/hooks/axiosHooks/useAxios'
 import { motion} from "framer-motion";
@@ -17,6 +17,15 @@ interface Profile {
   phone: string | undefined
   lookingFor?: string | undefined
   interestedIn?: string | undefined
+}
+
+interface Errors {
+  username?: string
+  dob?: string 
+  email?: string
+  phone?: string
+  lookingFor?: string
+  interestedIn?: string
 }
 
 type ProfileImage = string[];
@@ -45,6 +54,7 @@ const optionsMap: Record<string, { label: string; value: string }[]> = {
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, fieldName, currentValue }) => {
   const [value, setValue] = useState(currentValue || "");
+  const [error, setError] = useState<Errors>({});
 
   useEffect(() => {
     if (isOpen) {
@@ -53,9 +63,44 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, fieldName, curre
   }, [isOpen, currentValue]);
 
   const handleSubmit = () => {
-    onSave(value);
-    onClose();
+    if(editFormValidation()){
+      onSave(value);
+      onClose();
+      setError({});
+    };
   };
+
+  const handleClose = () => {
+    onClose();
+    setError({})
+  }
+
+  const editFormValidation =  () => {
+    const newError: Errors = {};
+    const birthDate = new Date(value);
+    const currentDate = new Date();
+    const age = currentDate.getFullYear() - birthDate.getFullYear();
+    // const monthDiff = currentDate.getMonth() - birthDate.getMonth();
+    // const dayDiff = currentDate.getDate() - birthDate.getDate();
+    const phoneNumberRegex = /^(\+?\d{1,3}[-.\s]?)?(\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}$/;
+
+    if (age < 18 || age === 18 ) {
+      newError.dob = 'Your age should be 18 or above';
+    }
+
+    if (
+      fieldName === 'phone' &&
+      value.length >= 10 &&
+      value.length <= 15 &&
+      !phoneNumberRegex.test(value) 
+    ) {
+      newError.phone = 'Please enter a valid phone number';
+    }
+    
+    setError(newError)
+    return Object.keys(newError).length === 0
+    
+  }
 
   const options = optionsMap[fieldName]; // Check if the field has predefined options
 
@@ -89,17 +134,22 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, fieldName, curre
           </select>
         ) : (
           // Render an input field if no predefined options
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-md mb-4 dark:bg-gray-800 dark:text-gray-300"
-          />
+          <>
+        <input
+          type={fieldName === 'dob' ? 'date' : 'text'}
+          value={fieldName === 'dob' 
+            ? value ? new Date(value).toLocaleDateString('en-CA') : '' 
+            : value}
+          onChange={(e) => setValue(e.target.value)}
+          className="w-full p-2 border border-gray-300 rounded-md mb-4 dark:bg-gray-800 dark:text-gray-300"
+        />
+        <span className='font-thin text-red-700'>{error && error[fieldName as keyof Errors]}</span>
+        </>
         )}
 
         <div className="flex justify-between">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="py-2 px-4 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
           >
             Cancel
@@ -168,6 +218,8 @@ const Profile: React.FC = () => {
     setIsModalOpen(true)
   }
 
+
+
   const handleSave = async (newValue: string) => {
     
     const confirm = await editConfirm();
@@ -209,7 +261,9 @@ const Profile: React.FC = () => {
   
 
   const handleDeleteImage = async(src: string) => {
-    if(!userInfo?.id) return
+    if(!userInfo?.id) return;
+    const confirm = await deleteConfirm();
+    if(!confirm) return;
     const response = await deleteProfilePicture(userInfo?.id, src)
     if(response.data){
       setProfileImage(response.data.image);
