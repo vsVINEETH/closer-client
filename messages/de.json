@@ -44,6 +44,7 @@
       "comment": "Hey, geben Sie Ihre Anmeldedaten ein, um sich anzumelden",
       "auth": "Mit Google anmelden",
       "signIn": "Anmelden",
+      "signUp":" Anmelden",
       "noAccount": "Haben Sie kein Konto?",
       "forgotPassword": "Passwort vergessen?",
       "or": "oder"

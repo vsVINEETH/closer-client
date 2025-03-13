@@ -80,7 +80,8 @@ const Chat: React.FC = () => {
   useEffect(() => {
     fetchChat();
     handleStatus(oppositeUserId);
-  }, []);
+  }, [oppositeUserId]);
+
 
   useEffect(() => {
     if (!receivedMessage) return; // Exit early if no message
@@ -120,11 +121,13 @@ const Chat: React.FC = () => {
   }, [receivedMessage]);
   
 
+
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
+
 
   useEffect(() => {
     if (socket && oppositeUserId) {
@@ -212,6 +215,7 @@ const Chat: React.FC = () => {
       };
 
       socket.emit('sendMessage', message);
+      // socket.on('')
     //  setMessages((prevMessages) => [...prevMessages, message]);
       setInput('');
       setAudioBlob(null); 

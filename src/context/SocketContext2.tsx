@@ -126,9 +126,9 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
   
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
-      // const videoDevices = !isVoiceCall
-      //   ? devices.filter((device) => device.kind === "videoinput")
-      //   : devices.filter((device) => device.kind === "audioinput");
+      const videoDevices = !isVoiceCall
+        ? devices.filter((device) => device.kind === "videoinput")
+        : devices.filter((device) => device.kind === "audioinput");
   
       const constraints: MediaStreamConstraints = isAudio || isVoiceCall
         ? { audio: true, video: false }
@@ -180,10 +180,33 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
     isMissed?:boolean,
   }) => {
     if (socket && user?.id && data?.ongoingCall && data?.isEmitHangUp) {
+      const { caller, receiver, isVoiceCall } = data.ongoingCall.participants;
+      const callType = isVoiceCall ? "voice" : "video"; 
+      
       socket.emit("hangup", {
         ongoingCall: data.ongoingCall,
         userHangingupId: user.id,
+        callDuration: callDuration,
       });
+
+        setMessages({
+          sender: caller.userId,
+          receiver: {
+            _id: receiver.userId,
+            username: receiver.profile.username,
+            image: receiver.profile.image,
+          },
+          callType: callType,
+          callDuration: callDuration,
+          message: `${callType} call ended`, // Optional message
+          type: "call",
+          isMissed: isCallEnded === false, // If duration is 0, mark as missed
+          isRead: false,
+          status: "read",
+          createdAt: new Date().toISOString(),
+        });
+      
+      
     }
     
     if (localStream) {
@@ -355,7 +378,7 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
   //call log handler
   const callLogHandler = (ongoingCall: OngoingCall | null, participants?:{caller?: string, receiver?: string, callType?: string, callDuration?: number, type?:string, isMissed?: boolean} | null) => {
     if(socket){
-      socket.emit('missedcall', {...ongoingCall, callDuration:60, type:'call', callType: isVoiceCall ? 'audio':'video', isMissedCall: participants?.isMissed ,...participants});
+      socket.emit('missedcall', {...ongoingCall, callDuration:callDuration, type:'call', callType: isVoiceCall ? 'audio':'video', isMissedCall: participants?.isMissed ,...participants});
       setOngoingCall(null);
       setIsVoiceCall(false);
     }

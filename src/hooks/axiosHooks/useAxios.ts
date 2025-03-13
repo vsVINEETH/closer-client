@@ -7,7 +7,7 @@ import { RootState } from "@/store";
 import { logout as adminLogout } from "@/store/slices/adminSlice";
 import { logout as userLogout } from "@/store/slices/userSlice";
 import { logout as employeeLogout } from "@/store/slices/employeeSlice";
-import {  errorToast } from "@/utils/toasts/toast";
+import {  errorToast, successToast } from "@/utils/toasts/toast";
 
 interface RequestOptions {
   url: string;
@@ -54,21 +54,20 @@ const useAxios = <T = any>(): UseAxiosReturn<T> => {
     (response: AxiosResponse) => {
       // Handle specific status codes for successful responses
       if (response.status === 200) {
-       // successToast("Request completed successfully");
       }
       return response;
     },
     (error) => {
       // Handle error responses based on status codes
       if (error.response) {
-        const { status } = error.response;
+        const { status, data } = error.response;
 
         switch (status) {
           case 400:
-            errorToast("Bad Request: Please check your input.");
+         //   errorToast(data.message);
             break;
           case 401:
-            errorToast("Unauthorized: Please log in again.");
+            errorToast(data.message);
             if (adminRole) {
               dispatch(adminLogout());
               router.push('/admin/login');
@@ -81,13 +80,13 @@ const useAxios = <T = any>(): UseAxiosReturn<T> => {
             }
             break;
           case 403:
-            errorToast("Forbidden: You do not have access.");
+         //   errorToast(data.message);
             break;
           case 404:
-            errorToast("Resource not found.");
+         //   errorToast(data.message);
             break;
           case 500:
-            errorToast("Internal Server Error: Please try again later.");
+           // errorToast(data.message);
             break;
           default:
            // errorToast("An unexpected error occurred.");

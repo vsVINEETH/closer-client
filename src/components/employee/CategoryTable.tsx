@@ -257,10 +257,12 @@ const CategoryTable: React.FC = () => {
 
         if(response.data){
             setEditModal(false)
-            const data = response.data;
+            const data = response.data.result;
+            
             setCategoryData(data.category);
             setResult(data.category);
-            setTotal(data.total)
+            setTotal(data.total);
+            successToast(response.data.message)
         }
         }
       };

@@ -93,7 +93,7 @@ const Otp: React.FC = () => {
 
         if(response.data){
           router.push("/user/setup");
-          successToast('OTP validated successfully')
+         // successToast('OTP validated successfully')
         }
       } catch (error) {
         setErrors({ inputOtp: "Something went wrong. Please try again." });
@@ -110,11 +110,7 @@ const Otp: React.FC = () => {
       setShow(true);
       const email = localStorage.getItem("email");
       if(!email) return;
-      const response = await resendVerificationCodeSignup(email);
-
-      if(response.data){
-        successToast(response.data)
-      }
+      await resendVerificationCodeSignup(email);
 
     } catch (error) {
       setErrors({ inputOtp: "Something went wrong. Please try again." });

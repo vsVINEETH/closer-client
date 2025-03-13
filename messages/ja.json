@@ -44,6 +44,7 @@
       "comment": "ログインするには、資格情報を入力してください",
       "auth": "Google でサインイン",
       "signIn": "サインイン",
+      "signUp":"サインアップ",
       "noAccount": "アカウントをお持ちではありませんか？",
       "forgotPassword": "パスワードをお忘れですか？",
        "or": "ou"

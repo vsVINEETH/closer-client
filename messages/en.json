@@ -43,7 +43,8 @@
       "password":"Enter your password",
       "comment":"Hey enter your credentials to login",
       "auth":"Sign in with google",
-      "signIn":"Sign In",
+      "signIn":"Sign in",
+      "signUp":"Sign up",
       "noAccount":"Don't do you have an account ?",
       "forgotPassword":"forgot password ?",
        "or": "or"

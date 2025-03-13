@@ -15,9 +15,11 @@ const hasShownToast = useRef(false);
 
   const {handleRequest} = useAxios();
 
-  const userId = useSelector((state: RootState) => state.user.userInfo?.id)
+  const userId = useSelector((state: RootState) => state.user?.userInfo?.id)
 
+  // if(!userId){ return };
   useEffect(() => {
+
 
     const savedLocation = localStorage.getItem("userLocation");
 

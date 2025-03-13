@@ -23,26 +23,6 @@ const updatePassword = async (employeeId: string, updatedPasswordData: ChangePas
     })
 };
 
-const verifyOTP = async (employeeEmail: string, OTP: string[]) => {
-    return await handleRequest({
-        url: '/api/employee/verify',
-        method: 'POST',
-        data: {
-          email: employeeEmail,
-          otp: OTP
-        }  
-    })
-};
-
-const resendOTP = async (employeeEmail: string) => {
-    return await handleRequest({
-        url: '/api/employee/resend',
-        method: 'POST',
-        data: {
-          email: employeeEmail
-        }
-    })
-};
 
 const logout = async () => {
     return await handleRequest({
@@ -52,5 +32,5 @@ const logout = async () => {
 
 };
 
-return { login, logout, resendOTP, verifyOTP, updatePassword }
+return { login, logout, updatePassword }
 }

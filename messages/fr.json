@@ -44,6 +44,7 @@
       "comment": "Hey, entrez vos identifiants pour vous connecter",
       "auth": "Se connecter avec Google",
       "signIn": "Se connecter",
+      "signUp": "Inscription",
       "noAccount": "Vous n'avez pas de compte?",
       "forgotPassword": "Mot de passe oublié?",
        "or": "ou"
