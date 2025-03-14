@@ -62,8 +62,10 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, fieldName, curre
     }
   }, [isOpen, currentValue]);
 
-  const handleSubmit = () => {
-    if(editFormValidation()){
+  const handleSubmit = async() => {
+    
+    const result = await editFormValidation()
+    if(result){
       onSave(value);
       onClose();
       setError({});
@@ -75,32 +77,30 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, fieldName, curre
     setError({})
   }
 
-  const editFormValidation =  () => {
+  const editFormValidation = async () => {
     const newError: Errors = {};
     const birthDate = new Date(value);
     const currentDate = new Date();
     const age = currentDate.getFullYear() - birthDate.getFullYear();
-    // const monthDiff = currentDate.getMonth() - birthDate.getMonth();
-    // const dayDiff = currentDate.getDate() - birthDate.getDate();
     const phoneNumberRegex = /^(\+?\d{1,3}[-.\s]?)?(\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}$/;
-
-    if (age < 18 || age === 18 ) {
+  
+    if (age < 18) {
       newError.dob = 'Your age should be 18 or above';
     }
-
+  
     if (
       fieldName === 'phone' &&
-      value.length >= 10 &&
-      value.length <= 15 &&
-      !phoneNumberRegex.test(value) 
+      (value.length < 10 || value.length > 15 || !phoneNumberRegex.test(value))
     ) {
       newError.phone = 'Please enter a valid phone number';
     }
-    
-    setError(newError)
-    return Object.keys(newError).length === 0
-    
-  }
+  
+    // Update state only after final validation check
+    setError(newError);
+  
+    return Object.keys(newError).length === 0;
+  };
+  
 
   const options = optionsMap[fieldName]; // Check if the field has predefined options
 

@@ -3,7 +3,7 @@ import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import useAxios from "@/hooks/axiosHooks/useAxios";
-import { warnToast } from "@/utils/toasts/toast";
+import { successToast, warnToast } from "@/utils/toasts/toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signupSchema } from "@/schemas/user/signupSchema";
@@ -31,6 +31,7 @@ const SignupForm: React.FC = () => {
       }
 
       if (response.data) {
+        successToast("OTP shared successfully")
         router.push("/user/signup/otp");
       }
   };
