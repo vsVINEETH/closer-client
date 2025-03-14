@@ -2,7 +2,7 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { successToast } from "@/utils/toasts/toast";
+import { errorToast, successToast } from "@/utils/toasts/toast";
 import { useSecurity } from "@/hooks/crudHooks/user/useSecurity";
 
 
@@ -91,9 +91,14 @@ const Otp: React.FC = () => {
         if(!email) return;
         const response = await validateOTPSignup(email, otp);
 
+        if(response.error){
+          setOtp(Array(4).fill(""));
+          errorToast('Invalid OTP')
+        }
+
         if(response.data){
           router.push("/user/setup");
-         // successToast('OTP validated successfully')
+          successToast('OTP validated successfully')
         }
       } catch (error) {
         setErrors({ inputOtp: "Something went wrong. Please try again." });

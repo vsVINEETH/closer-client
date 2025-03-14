@@ -11,6 +11,8 @@ import { infoToast } from '@/utils/toasts/toast';
 import { useSecurity } from '@/hooks/crudHooks/user/useSecurity';
 import { reportConfim } from '@/utils/sweet_alert/sweetAlert';
 import { useFetch } from '@/hooks/fetchHooks/useUserFetch';
+import EmojiPicker from "emoji-picker-react";
+import FloatingEmojiPicker from './EmojiPicker';
 
 interface Receiver {
   _id: string,
@@ -47,6 +49,8 @@ const Chat: React.FC = () => {
   const pathname = usePathname();
 
   const [messages, setMessages] = useState<Chats[]>([]);
+  const [showPicker, setShowPicker] = useState(false);
+  // const [text, setText] = useState("");
   const [input, setInput] = useState<string>('');
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
@@ -134,6 +138,7 @@ const Chat: React.FC = () => {
       checkOnlineStatus(oppositeUserId);
     }
   }, [socket, oppositeUserId]);
+
 
 
   const handleCallWithOppositeUser = (callType:string) => {
@@ -324,10 +329,13 @@ const Chat: React.FC = () => {
           
       </div>
 
+      
+
       <div
         ref={chatContainerRef}
         className="h-96 overflow-y-auto bg-white dark:bg-nightBlack rounded-lg p-4 mb-4 flex flex-col space-y-2 scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-gray-200 scrollable-container"
       >
+       
         
         {messages.map((msg, idx) => (
          
@@ -350,7 +358,7 @@ const Chat: React.FC = () => {
         ))}
 
       </div>
-
+      
       <div className="flex items-center space-x-5">
         <input
           type="text"
@@ -360,9 +368,14 @@ const Chat: React.FC = () => {
           placeholder="Type a message..."
           className="flex-grow p-2 border rounded-lg dark:border-gray-700 dark:text-white dark:bg-nightBlack"
         />
+
+        <FloatingEmojiPicker
+          onEmojiSelect={(emoji) => setInput((prev) => prev + emoji)}
+        />
+        
         {!isRecording &&
-        <SendHorizonal size={25} onClick={() => handleSend() }  className='dark:text-lightBlue'/>
-         }
+          <SendHorizonal size={25} onClick={() => handleSend() }  className='dark:text-lightBlue'/>
+        }
         {isRecording ? (
             <div className=" flex items-center space-x-2">
               <span className="text-xs text-gray-600 dark:text-lightGray">{recordingTime}s</span>

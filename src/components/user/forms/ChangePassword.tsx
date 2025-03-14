@@ -79,7 +79,7 @@ export default function PasswordForm() {
     if (!formData.confirmPassword.trim()) {
       newErrors.confirmPassword = "This Field is required";
     } else if (formData.newPassword !== formData.confirmPassword) {
-      newErrors.newPassword = "Password mismatch";
+      newErrors.confirmPassword = "Password mismatch";
     }
 
     setError(newErrors);
