@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Mic, SendHorizonal, Trash, Video, Phone, Check, CheckCheck, ChevronDown } from 'lucide-react'; 
 import { useSearchParams, usePathname } from 'next/navigation';
 import { useSocket, SocketUser } from '@/context/SocketContext2';
@@ -8,10 +8,7 @@ import { RootState } from '@/store';
 import VoiceMessage from './Voice';
 import CallTypes from './CallType';
 import { infoToast } from '@/utils/toasts/toast';
-import { useSecurity } from '@/hooks/crudHooks/user/useSecurity';
-import { reportConfim } from '@/utils/sweet_alert/sweetAlert';
 import { useFetch } from '@/hooks/fetchHooks/useUserFetch';
-import EmojiPicker from "emoji-picker-react";
 import FloatingEmojiPicker from './EmojiPicker';
 
 interface Receiver {
@@ -49,8 +46,6 @@ const Chat: React.FC = () => {
   const pathname = usePathname();
 
   const [messages, setMessages] = useState<Chats[]>([]);
-  const [showPicker, setShowPicker] = useState(false);
-  // const [text, setText] = useState("");
   const [input, setInput] = useState<string>('');
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
@@ -63,29 +58,24 @@ const Chat: React.FC = () => {
   const { socket, handleCall, onlineUsers, isCallEnded, setVoiceCall, ongoingCall, receivedMessage,  checkOnlineStatus, handleStatus, oppositeUserIsOnline, callLogHandler } = useSocket();
 
   const user = useSelector((state: RootState) => state.user.userInfo);
-  const preference = user?.preferences;
   const {getChats, sendAudio} = useFetch()
-  const {markReportUser, blockUser} = useSecurity()
 
   const oppositeUser:SocketUser[] | undefined = onlineUsers?.filter(onlineUser => {
     return onlineUser.userId === oppositeUserId ? onlineUser : null;
   });
 
-
-  const userPreferences = {
-    userId: user?.id,
-    interestedIn: preference?.interestedIn || user?.interestedIn,
-    ageRange: preference?.ageRange || [18, 50],
-    distance: preference?.distance || 10,
-    lookingFor: preference?.lookingFor || user?.lookingFor,
-  };
-
-
   useEffect(() => {
+    handleReadMessage()
     fetchChat();
     handleStatus(oppositeUserId);
   }, [oppositeUserId]);
 
+  const handleReadMessage = useCallback(() => {
+    socket?.emit("readMessage", {
+      sender: oppositeUserId,
+      receiver: user?.id,
+    });
+  },[oppositeUserId]);
 
   useEffect(() => {
     if (!receivedMessage) return; // Exit early if no message
@@ -96,11 +86,11 @@ const Chat: React.FC = () => {
     const expectedUrl = `/user/chat/?id=${String(receivedMessage.sender)}`;
   
     if (currentUrl === expectedUrl && receivedMessage.message) {
-      socket?.emit("readMessage", {
-        sender: receivedMessage.sender,
-        receiver: receivedMessage.receiver._id,
-        chatId: receivedMessage._id,
-      });
+        socket?.emit("readMessage", {
+          sender: receivedMessage.sender,
+          receiver: receivedMessage.receiver._id,
+          chatId: receivedMessage._id,
+        });
 
       setMessages((prevMessages) =>{
         const updatedMessages = prevMessages.map((msg) =>
@@ -117,14 +107,11 @@ const Chat: React.FC = () => {
         msg._id === receivedMessage._id ? receivedMessage : msg
       );
     
-      // If the message doesn't exist, add it to the array
       const messageExists = prevMessages.some((msg) => msg._id === receivedMessage._id);
       return messageExists ? updatedMessages : [...updatedMessages, receivedMessage];
     });
     
   }, [receivedMessage]);
-  
-
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -142,7 +129,11 @@ const Chat: React.FC = () => {
 
 
   const handleCallWithOppositeUser = (callType:string) => {
-    if(isCallEnded && ongoingCall){return}
+    if(isCallEnded && ongoingCall){return};
+    if(callType === 'video' && !user?.prime?.isPrime){
+      infoToast('This is an Prime feature');
+      return;
+    }
     if (oppositeUser && oppositeUser.length > 0 && callType === 'video') {
       setVoiceCall(false);
       handleCall(oppositeUser[0], false);
@@ -174,7 +165,7 @@ const Chat: React.FC = () => {
       });
     }
   };
-  
+
   const handleSend = async () => {
     try {
 
@@ -235,13 +226,14 @@ const Chat: React.FC = () => {
       const recorder = new MediaRecorder(stream);
       recorder.ondataavailable = (e) => {
         setAudioBlob( e.data);
+  
       };
       recorder.start();
       setMediaRecorder(recorder);
       setIsRecording(true);
 
-      const id = setInterval(() => setRecordingTime((prevTime) => prevTime + 1), 1000);
-      setIntervalId(id);
+      const intervalId = setInterval(() => setRecordingTime((prevTime) => prevTime + 1), 1000);
+      setIntervalId(intervalId);
     } catch (err) {
       console.error('Error accessing microphone:', err);
     }
@@ -267,42 +259,6 @@ const Chat: React.FC = () => {
     }
   };
 
-
-  const handleReport = async () => {
-    try {
-      const confirm = await reportConfim();
-      if (!confirm || !user?.id) return;
-
-      const response = await markReportUser(
-        oppositeUserId || '',
-        user?.id || "",
-        userPreferences
-      );
-
-      if(response.data){
-        infoToast('User has been reported')
-      };
-    } catch (error) {
-      console.error(error)
-    }
-  };
-
-
-  const handleBlock = async () => {
-    try {
-      //const confirm = await blockConfirm(oppoUser)
-      if(!user?.id) return;
-
-       await blockUser(
-        oppositeUserId || '',
-        user.id,
-        userPreferences
-      )
-    } catch (error) {
-      console.error(error)
-    }
-  }
-
   return (
     <div className="w-full bg-gray-100 dark:bg-darkGray dark:border-gray-700 overflow-hidden rounded-lg shadow-md p-4">
         {/* { callVideo && oppositeUserId && 
@@ -320,23 +276,15 @@ const Chat: React.FC = () => {
           <p className="text-sm text-gray-500 dark:text-gray-400">{ oppositeUserIsOnline ? 'Online' : 'Offline'}</p>
         </div>
 
-
-         <Video size={25} onClick={() => handleCallWithOppositeUser('video') } className='dark:text-gray-400'/> 
-          {/* <Video size={25} onClick={() => setCallVideo(prev => !prev)}/> */}
+          <Video size={25} onClick={() => handleCallWithOppositeUser('video') } className='dark:text-gray-400'/> 
           <Phone size={19} onClick={() => handleCallWithOppositeUser('audio')} className='dark:text-gray-400'/>
-          
-          <ChevronDown size={20} className='dark:text-gray-400'/>
-          
-      </div>
-
       
-
+      </div>
+      
       <div
         ref={chatContainerRef}
         className="h-96 overflow-y-auto bg-white dark:bg-nightBlack rounded-lg p-4 mb-4 flex flex-col space-y-2 scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-gray-200 scrollable-container"
-      >
-       
-        
+      >  
         {messages.map((msg, idx) => (
          
           <div
@@ -346,7 +294,6 @@ const Chat: React.FC = () => {
               msg.sender === user?.id ? 'bg-blue-200 self-end' : 'bg-gray-200  self-start'
             }`}
           >
-            
             {msg.type === 'audio' ? ( <VoiceMessage audioSrc={msg.message}/>) : msg.type === 'text' ? ( <span className="text-sm">{msg.message}</span> ) : msg.type === 'call' ? <CallTypes type={msg.callType} caller={msg.senderProfile?.username} isMissed={msg.isMissed} callerId={msg.sender} callDuration={msg.callDuration} /> :""}
 
             <span className="text-[9px] font-thin align-bottom">
@@ -369,13 +316,14 @@ const Chat: React.FC = () => {
           className="flex-grow p-2 border rounded-lg dark:border-gray-700 dark:text-white dark:bg-nightBlack"
         />
 
-        <FloatingEmojiPicker
-          onEmojiSelect={(emoji) => setInput((prev) => prev + emoji)}
-        />
-        
         {!isRecording &&
           <SendHorizonal size={25} onClick={() => handleSend() }  className='dark:text-lightBlue'/>
         }
+
+        <FloatingEmojiPicker
+          onEmojiSelect={(emoji) => setInput((prev) => prev + emoji)}
+        />
+
         {isRecording ? (
             <div className=" flex items-center space-x-2">
               <span className="text-xs text-gray-600 dark:text-lightGray">{recordingTime}s</span>

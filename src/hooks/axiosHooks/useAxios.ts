@@ -7,7 +7,7 @@ import { RootState } from "@/store";
 import { logout as adminLogout } from "@/store/slices/adminSlice";
 import { logout as userLogout } from "@/store/slices/userSlice";
 import { logout as employeeLogout } from "@/store/slices/employeeSlice";
-import {  errorToast, successToast } from "@/utils/toasts/toast";
+import {  errorToast } from "@/utils/toasts/toast";
 
 interface RequestOptions {
   url: string;
@@ -39,7 +39,7 @@ const useAxios = <T = any>(): UseAxiosReturn<T> => {
   const adminRole = useSelector((state: RootState) => state.admin.isAuthenticated ? state.admin.adminInfo?.role : null);
 
   const axiosInstance: AxiosInstance = axios.create({
-    baseURL: 'http://localhost:5000',
+    baseURL: process.env.NEXT_PUBLIC_BACKEND_URL, // 'http://localhost:5000',
     withCredentials: true,
   });
 

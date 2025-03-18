@@ -11,20 +11,44 @@ export default function VoiceMessage({ audioSrc }: VoiceMessageProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [currentTime, setCurrentTime] = useState(0) // Track current time
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
-    audioRef.current = new Audio(audioSrc)
-    audioRef.current.addEventListener('loadedmetadata', handleLoadedMetadata)
-    audioRef.current.addEventListener('timeupdate', handleTimeUpdate)
-    audioRef.current.addEventListener('ended', handleEnded)
+    if (!audioRef.current) {
+      audioRef.current = new Audio(audioSrc) // Initialize audio instance
+    }
+
+    const audio = audioRef.current
+
+    const handleLoadedMetadata = () => {
+      if (!isNaN(audio.duration) && isFinite(audio.duration)) {
+        setDuration(audio.duration)
+      }
+    }
+
+    const handleTimeUpdate = () => {
+      if (audio.duration && isFinite(audio.duration)) {
+        setCurrentTime(audio.currentTime)
+        setProgress((audio.currentTime / audio.duration) * 100)
+      }
+    }
+
+    const handleEnded = () => {
+      setIsPlaying(false)
+      setProgress(0)
+      setCurrentTime(0)
+    }
+
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata)
+    audio.addEventListener('timeupdate', handleTimeUpdate)
+    audio.addEventListener('ended', handleEnded)
 
     return () => {
-      if (audioRef.current) {
-        audioRef.current.removeEventListener('loadedmetadata', handleLoadedMetadata)
-        audioRef.current.removeEventListener('timeupdate', handleTimeUpdate)
-        audioRef.current.removeEventListener('ended', handleEnded)
-      }
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+      audio.removeEventListener('timeupdate', handleTimeUpdate)
+      audio.removeEventListener('ended', handleEnded)
+      audio.pause()
     }
   }, [audioSrc])
 
@@ -39,25 +63,8 @@ export default function VoiceMessage({ audioSrc }: VoiceMessageProps) {
     }
   }
 
-  const handleLoadedMetadata = () => {
-    if (audioRef.current) {
-      setDuration(audioRef.current.duration)
-    }
-  }
-
-  const handleTimeUpdate = () => {
-    if (audioRef.current) {
-      const progress = (audioRef.current.currentTime / audioRef.current.duration) * 100
-      setProgress(progress)
-    }
-  }
-
-  const handleEnded = () => {
-    setIsPlaying(false)
-    setProgress(0)
-  }
-
   const formatTime = (time: number) => {
+    if (isNaN(time) || time <= 0) return '0:00'
     const minutes = Math.floor(time / 60)
     const seconds = Math.floor(time % 60)
     return `${minutes}:${seconds.toString().padStart(2, '0')}`
@@ -80,10 +87,9 @@ export default function VoiceMessage({ audioSrc }: VoiceMessageProps) {
           />
         </div>
       </div>
-      <span className="text-xs text-gray-500 min-w-[40px] text-right">
-        {formatTime(duration)}
+      <span className="text-xs text-gray-500 min-w-[50px] text-right">
+        {formatTime(currentTime)} / {formatTime(duration)}
       </span>
     </div>
   )
 }
-

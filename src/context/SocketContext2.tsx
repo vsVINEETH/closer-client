@@ -134,7 +134,7 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
         ? { audio: true, video: false }
         : {
             audio: true,
-            video: true
+             video: true
             // video: {
             //   width: { min: 640, ideal: 1280, max: 1920 },
             //   height: { min: 360, ideal: 720, max: 1080 },
@@ -179,9 +179,10 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
     isEmitHangUp?: boolean,
     isMissed?:boolean,
   }) => {
+
     if (socket && user?.id && data?.ongoingCall && data?.isEmitHangUp) {
       const { caller, receiver, isVoiceCall } = data.ongoingCall.participants;
-      const callType = isVoiceCall ? "voice" : "video"; 
+      const callType = isVoiceCall ? "audio" : "video"; 
       
       socket.emit("hangup", {
         ongoingCall: data.ongoingCall,
@@ -189,6 +190,19 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
         callDuration: callDuration,
       });
 
+      let typeOfCall: string;
+      if(caller.userId == user.id && callType === 'audio' && callDuration <= 0){
+        typeOfCall = 'noAudioAnswer'
+      }else if (caller.userId == user.id  && callType === 'video' && callDuration <= 0){
+        typeOfCall = 'noVideoAnswer'
+      }else if( receiver.userId == user.id  && callType === 'audio'){
+        typeOfCall = 'missedAudio'
+       }else if( receiver.userId == user.id  && callType === 'video'){
+        typeOfCall = 'missedVideo'
+       }else{
+        typeOfCall = callType;
+       };
+      
         setMessages({
           sender: caller.userId,
           receiver: {
@@ -196,7 +210,7 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
             username: receiver.profile.username,
             image: receiver.profile.image,
           },
-          callType: callType,
+          callType: typeOfCall,
           callDuration: callDuration,
           message: `${callType} call ended`, // Optional message
           type: "call",
@@ -205,7 +219,6 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
           status: "read",
           createdAt: new Date().toISOString(),
         });
-      
       
     }
     
@@ -229,7 +242,7 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
   };
 
   // create peer
-  const createPeer =  (stream: MediaStream, initiator: boolean) => {
+  const createPeer =  async (stream: MediaStream, initiator: boolean) => {
     const iceServers: RTCIceServer[] = [
       {
         urls: [
@@ -242,9 +255,9 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
     ];
 
     const peer = new Peer({
-      initiator,
+      initiator: initiator,
       trickle: false,
-      stream,
+      stream: stream,
       config: { iceServers },
     });
 
@@ -268,18 +281,21 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
 
     // Debug peer connection states
     const rtcPeerConnection: RTCPeerConnection = (peer as any)._pc;
-    rtcPeerConnection.oniceconnectionstatechange = () => {
-      if (
-        rtcPeerConnection.iceConnectionState === "disconnected" ||
-        rtcPeerConnection.iceConnectionState === "failed"
-      ) {
-        handleHangup({});
-      }
-    };
 
-    rtcPeerConnection.onconnectionstatechange = () => {
-      console.log("Connection State:", rtcPeerConnection.connectionState);
+    rtcPeerConnection.oniceconnectionstatechange = () => {
+      console.log("ICE Connection State:", rtcPeerConnection.iceConnectionState);
+      
+      setTimeout(() => {
+        if (
+          rtcPeerConnection.iceConnectionState === "disconnected" ||
+          rtcPeerConnection.iceConnectionState === "failed"
+        ) {
+          console.warn("Call disconnected, hanging up...");
+          handleHangup({});
+        }
+      }, 5000); 
     };
+    
 
     return peer;
   };
@@ -309,7 +325,7 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
 
     setIsVoiceCall(isAudio);
     // Create peer as initiator
-    const newPeer =  createPeer(stream, true);
+    const newPeer = await createPeer(stream, true);
     setPeer({
       peerConnection: newPeer,
       participantUser: user,
@@ -356,7 +372,7 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
     setLocalStream(stream);
 
     // Create peer as non-initiator for answering
-    const newPeer =  createPeer(stream, false);
+    const newPeer = await createPeer(stream, false);
     setPeer({
       peerConnection: newPeer,
       participantUser: ongoingCall.participants.caller,
@@ -401,6 +417,20 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
         return
       }
 
+      
+    // Fetch media stream dynamically if missing
+        // let stream: MediaStream | null = localStream ;
+        // if (!stream) {
+        //   console.warn("Local stream is missing, fetching...");
+          
+        //   stream = await getMediaStream("faceMode", data.ongoingCall.isVoiceCall);
+        //   if (!stream) {
+        //     console.error("Failed to get local stream");
+        //     return;
+        //   }
+        //   setLocalStream(stream);
+        // }
+
       // If peer exists, just signal
       if (peer?.peerConnection && !peer.peerConnection.destroyed) {
         console.log("Signaling existing peer");
@@ -411,7 +441,7 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
       // Create new peer if we don't have one
       if (!peer?.peerConnection) {
         console.log("Creating new peer in completePeerConnection");
-        const newPeer = createPeer(localStream, false);
+        const newPeer = await createPeer(localStream, false);
         setPeer({
           peerConnection: newPeer,
           participantUser: data.ongoingCall.participants.receiver,

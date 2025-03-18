@@ -4,6 +4,7 @@ import { RootState } from "@/store";
 import { useSelector } from "react-redux";
 import Link from "next/link";
 import { HiArrowLeft, HiArrowRight } from "react-icons/hi";
+import { BellRing, MessageSquareText, Users, ThumbsUp, ThumbsDown } from "lucide-react";
 import { successToast } from "@/utils/toasts/toast";
 import { useRouter } from "next/navigation";
 import { useSocket} from "@/context/SocketContext2";
@@ -11,15 +12,7 @@ import { useSearchParams, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useFetch } from "@/hooks/fetchHooks/useUserFetch";
 import { useTranslations } from "next-intl";
-
-
-interface MenuItem {
-  href: string;
-  text: string;
-  key: string;
-}
-
-
+import Tooltip from "../reusables/ToolTip";
 
 interface Notification {
   id: string;
@@ -57,10 +50,10 @@ interface Messages {
 
 const SideBar: React.FC = () => {
   const t = useTranslations('Sidebar');
-  const menuItems: MenuItem[] = [
-    { href: "#", text: t('matches'), key: 'matches'},
-    { href: "#", text: t('messages'), key: 'messages'},
-    { href: "#", text: t('notifications'), key:'notifications' },
+  const menuItems = [
+    { href: "#", text: t('matches'), icon: <Users size={25}/>, key: 'matches'},
+    { href: "#", text: t('messages'),icon: <MessageSquareText size={23}/>,  key: 'messages'},
+    { href: "#", text: t('notifications'), icon: <BellRing size={23}/>, key:'notifications' },
   ];
   const searchParams = useSearchParams();
   const oppositeUserId = searchParams.get('id');
@@ -311,17 +304,17 @@ const SideBar: React.FC = () => {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleAcceptNotification(index, item.id, item.interactor)}
-                  className="px-3 py-1 text-sm font-medium text-white bg-green-500 rounded hover:bg-green-600"
+                  className="px-2 py-1 text-sm font-medium text-white bg-green-500 rounded hover:bg-green-600"
                 >
-                  Accept
+                  <ThumbsUp/>
                 </motion.button>
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleRejectNotification(index, item.id, item.interactor)}
-                  className="px-3 py-1 text-sm font-medium text-white bg-red-500 rounded hover:bg-red-600"
+                  className="px-2 py-1 text-sm font-medium text-white bg-red-500 rounded hover:bg-red-600"
                 >
-                  Reject
+                 <ThumbsDown/>
                 </motion.button>
               </div>
             </motion.div>
@@ -402,12 +395,12 @@ const SideBar: React.FC = () => {
                   );
                 })
               ) : (
-                <p className="p-4 text-center text-gray-600 dark:text-gray-400">No messages yet.</p>
+                <p className="p-4 text-gray-600">No messages yet.</p>
               )}
             </AnimatePresence>
           </div>
           ) : (
-            <p className="p-4 text-center text-gray-600 dark:text-gray-400">
+            <p className="p-4 text-gray-600">
               No messages yet.
             </p>
           );
@@ -470,6 +463,7 @@ const SideBar: React.FC = () => {
     }
   };
 
+
   return (
   <div className="lg:w-96">
     {/* Arrow Button for Opening Sidebar */}
@@ -494,7 +488,7 @@ const SideBar: React.FC = () => {
       transition={{ type: "tween", duration: 0.3 }}
     >
       {/* Profile Section */}
-      <div className="flex items-center gap-3 p-4 border-b border-gray-200">
+      <div className="flex items-center gap-3 p-4 border-b border-gray-200 dark:border-gray-700 ">
         <motion.img
           src={userInfo?.image && userInfo?.image[1]}
           alt="User Avatar"
@@ -512,20 +506,37 @@ const SideBar: React.FC = () => {
       </div>
 
       {/* Navigation Menu */}
-      <nav className="py-4 flex flex-col space-y-2 lg:flex-row lg:space-x-4 lg:justify-start lg:px-4 flex-wrap">
-      {menuItems.map((item) => (
-        <motion.button
-          key={item.key}
-          onClick={() => setActiveTab(item.key)}
-          className={`inline-flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 dark:hover:text-gray-400 dark:text-lightGray 
-            ${activeTab === item.key ? "font-bold text-black dark:text-white" : ""} 
-            max-w-full break-words`}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          {item.text}
+      <nav className="py-4 flex flex-col space-y-2 lg:flex-row lg:space-x-4 lg:justify-between lg:px-4">
+
+      {menuItems.map((item, index) => (
+        <Tooltip text={item.text} key={index}>
+
+          <motion.button
+            key={item.key}
+            onClick={() => setActiveTab(item.key)}
+            className={`flex-1 inline-flex items-center px-4 py-2 justify-center text-gray-600 hover:text-gray-900 dark:hover:text-gray-400 dark:text-lightGray 
+             
+              max-w-full truncate`}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+          
+          {item.key === "notifications" && notifications.length > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+            {notifications.length}
+          </span>
+        )}
+
+       {/* {item.key === "matches" && matches.length > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+            {matches.length}
+          </span>
+        )} */}
+          <span className={` ${activeTab === item.key ? "font-bold text-black  dark:text-customPink" : ""}`}>{item.icon}</span>
+          
         </motion.button>
 
+        </Tooltip>
         ))}
       </nav>
 

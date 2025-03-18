@@ -130,6 +130,7 @@ const EventTable: React.FC = () => {
 
             if(response.data){
                 const data = response.data;
+                console.log(data)
                 setEventData(data.events);
                 setResult(data.events);
                 setTotal(data.total);

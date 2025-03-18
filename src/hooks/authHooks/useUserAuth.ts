@@ -7,6 +7,7 @@ import { logout as userLogout, login as userLogin } from "@/store/slices/userSli
 import { useRouter } from "next/navigation";
 import { LoginCrendentialsType, SocialLogCredentialType } from "@/types/customTypes";
 import { useLoading } from "@/context/LoadingContext";
+import { errorToast } from "@/utils/toasts/toast";
 
 export const useAuth = () => {
     const {login, socialLogin, logout} = useAuthService();
@@ -19,7 +20,8 @@ export const useAuth = () => {
         setLoading(true);
         const response = await login(loginCredentials);
         if (response.error) {
-          setError(response.data);
+          setError(response.error);
+          errorToast(response.error);
         }
         if(response.data){
             const { user } = response.data;
@@ -30,6 +32,7 @@ export const useAuth = () => {
                 username: user.username,
                 email: user.email,
                 image: user.image,
+                imageExpiry: Date.now() + user.imageExpiry * 1000,
                 phone: user.phone,
                 birthday: user.dob,
                 lookingFor: user.lookingFor,
@@ -61,6 +64,7 @@ export const useAuth = () => {
                 username: user.username,
                 email: user.email,
                 image: user.image,
+                imageExpiry: Date.now() + user.imageExpiry * 1000,
                 phone: user.phone,
                 birthday: user.dob,
                 lookingFor: user.lookingFor,

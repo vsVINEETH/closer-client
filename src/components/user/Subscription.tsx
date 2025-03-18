@@ -34,12 +34,6 @@ const Subscription: React.FC = () => {
 
   return (
 <>
-  {/* Back Button */}
-  {/* <div className="flex items-center dark:text-white text-gray-500 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 transition" onClick={goBack}>
-    <ChevronLeft size={22} />
-    <span className="ml-1 text-sm font-medium">Back</span>
-  </div> */}
-
   {/* Main Container */}
   <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-nightBlack px-4">
     {/* Header */}
@@ -61,8 +55,9 @@ const Subscription: React.FC = () => {
       <ul className="text-sm text-gray-700 dark:text-gray-300 list-disc list-inside space-y-2">
         <li>Prime discovery complete access</li>
         <li>Get priority in matching</li>
-        <li>Send unlimited interests to everyone</li>
+        <li>No more advertisement</li>
         <li>Video chat in person</li>
+        <li>Audio narration while reading blogs</li>
       </ul>
 
       {/* Subscription Plans */}
