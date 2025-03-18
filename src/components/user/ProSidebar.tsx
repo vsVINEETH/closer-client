@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store";
 import { updatePreferences } from "@/store/slices/userSlice";
+import { Crown } from "lucide-react";
 
 
 const ProSidebar: React.FC = () => {
@@ -106,22 +107,29 @@ const ProSidebar: React.FC = () => {
 
           {/* Prime Discovery */}
           <div className="space-y-4">
+            
             <h2 className="text-md font-semibold text-gray-700 dark:text-gray-300">
-              Prime Discovery
+              Prime Discovery 
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Preferences show you people who match your vibe, but won’t limit
-              who you see – you will still be able to match with people outside
+              Preferences show you people who match your vibe, but won't limit
+              who you see - you will still be able to match with people outside
               your selections.
             </p>
 
             {/* Age Preference */}
             <div>
+              
+            { !prime?.isPrime &&
+              <Crown size={25} className="text-customPink"/>
+              }
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Age Preference
+                Age Preference 
               </label>
+              
               <div className="flex items-center justify-between mt-1">
                 <input
+                 disabled={prime?.isPrime === false}
                   type="range"
                   min={18}
                   max={50}
@@ -132,6 +140,7 @@ const ProSidebar: React.FC = () => {
                   className="w-full"
                 />
                 <input
+                  disabled={prime?.isPrime === false}
                   type="range"
                   min={18}
                   max={50}
@@ -141,6 +150,7 @@ const ProSidebar: React.FC = () => {
                   }
                   className="w-full"
                 />
+                
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {ageRange[0]} - {ageRange[1]}
@@ -153,6 +163,7 @@ const ProSidebar: React.FC = () => {
                 Distance Preference
               </label>
               <input
+                disabled={prime?.isPrime === false}
                 type="range"
                 min={1}
                 max={100}
@@ -173,6 +184,7 @@ const ProSidebar: React.FC = () => {
                 <select className="w-full mt-1 py-2 text-sm border-gray-300 dark:border-gray-700 dark:bg-darkGray dark:text-gray-300 rounded-md"
                 value={interestedIn}
                 onChange={(e) => setInterestedIn(e.target.value)}
+                disabled={prime?.isPrime === false}
                 >
                 <option value="">Select an option</option>
                 <option value="male">Male</option>
@@ -189,6 +201,7 @@ const ProSidebar: React.FC = () => {
                 <select className="w-full text-sm mt-1 py-2 border-gray-300 dark:border-gray-700 dark:bg-darkGray dark:text-gray-300 rounded-md"
                 value={lookingFor}
                 onChange={(e) => setLookingFor(e.target.value)}
+                disabled={prime?.isPrime === false}
                 >
                 <option value="">Select an option</option>
                 <option value="short-term">Short-term relationship</option>

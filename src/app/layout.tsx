@@ -10,6 +10,7 @@ import SocketProvider from "@/providers/SocketProviders";
 import { QueryProvider } from "@/providers/TanStackQueryProvider";
 import { LoadingProvider } from "@/context/LoadingContext";
 import { ToastContainer } from 'react-toastify';
+import ImageRefreshHandler from "@/utils/ImageUpdater";
 import Call from '@/components/user/message/Call';
 import CallNotification from '@/components/user/message/CallNotification';
 import ChatBot from "@/components/Chatbot";
@@ -61,6 +62,7 @@ export default async function RootLayout({
                     <SocketProvider> 
                     <CallNotification/> 
                      <Call/>
+                     <ImageRefreshHandler/>
                       <LoadingProvider>
                         {children}
                        </LoadingProvider>

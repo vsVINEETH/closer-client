@@ -15,6 +15,7 @@ interface UserState {
     username: string;
     email: string;
     image?: string[];
+    imageExpiry?: number | null;
     phone?: string;
     birthday?: string;
     lookingFor?: string;
@@ -35,6 +36,7 @@ interface LoginPayload {
   username: string;
   email: string;
   image?: string[];
+  imageExpiry?: number | null;
   phone?: string;
   birthday?: string;
   lookingFor?: string;
@@ -63,6 +65,7 @@ const userSlice = createSlice({
         username: action.payload.username,
         email: action.payload.email,
         image: action.payload.image,
+        imageExpiry: action.payload.imageExpiry || null,
         role: "user",
         phone: action.payload.phone,
         birthday: action.payload.birthday, 
@@ -100,6 +103,15 @@ const userSlice = createSlice({
         state.userInfo.preferences = action.payload;
       }
     },
+    updateProfileImage: (
+      state,
+      action: PayloadAction<{ image: string[]; imageExpiry: number }>
+    ) => {
+      if (state.userInfo) {
+        state.userInfo.image = action.payload.image;
+        state.userInfo.imageExpiry = action.payload.imageExpiry;
+      }
+    },
     logout: (state) => {
       state.isAuthenticated = false;
       state.userInfo = null;
@@ -107,5 +119,5 @@ const userSlice = createSlice({
   },
 });
 
-export const { login, logout, updateStatus, updatePrimeStatus, updatePreferences } = userSlice.actions;
+export const { login, logout, updateStatus, updatePrimeStatus, updatePreferences, updateProfileImage } = userSlice.actions;
 export default userSlice.reducer;

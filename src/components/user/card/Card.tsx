@@ -81,7 +81,7 @@ const ProfileCard: React.FC = () => {
     }
   };
 
-  async function fetchUsers () {
+  async function fetchUsers () { 
     const response = await getUsersData({
       userId: userInfo?.id,
       interestedIn: preference?.interestedIn || userInfo?.interestedIn,
@@ -193,6 +193,8 @@ const ProfileCard: React.FC = () => {
       message: `${userInfo?.username} is interested in your profile!`,
       image: userInfo?.image,
     });
+    successToast('Your interest has been shared');
+    handleNextUser();
   };
 
   const cardVariants = {

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { SmilePlus } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 
 interface FloatingEmojiPickerProps {
@@ -44,12 +45,10 @@ const FloatingEmojiPicker: React.FC<FloatingEmojiPickerProps> = ({ onEmojiSelect
       )}
 
       {/* Emoji Button */}
-      <button
-        className="mt-2 bg-gray-100 dark:bg-darkGray p-2 rounded hover:bg-gray-200"
-        onClick={() => setShowPicker((prev) => !prev)}
-      >
-        😀
-      </button>
+      <SmilePlus size={25}  className="dark:text-white"
+      onClick={() => setShowPicker((prev) => !prev)}
+      />
+
     </div>
   );
 };

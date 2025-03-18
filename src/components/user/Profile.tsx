@@ -270,7 +270,9 @@ const Profile: React.FC = () => {
     }
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const confirm = await editConfirm();
+    if(!confirm){return};
     const files = Array.from(e.target.files || []);
     setImages(files) 
 
@@ -284,8 +286,7 @@ const Profile: React.FC = () => {
     images.forEach((image: File) => {
       data.append('images', image);
     });
-    const confirm = await editConfirm();
-    if(!confirm){return};
+
     if(!userInfo?.id) return;
     const response = await updateProfilePicture(userInfo?.id, data)
     if(response.error){
