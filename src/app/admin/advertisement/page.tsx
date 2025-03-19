@@ -3,6 +3,7 @@ import Header from '@/components/reusables/Header'
 import Footer from '@/components/reusables/Footer'
 import SideBar from '@/components/admin/SideBar'
 import AdvertisementTable from '@/components/admin/Advertisement'
+
 const Advertisement: React.FC = () => {
   return (
     <div  className="flex flex-col min-h-screen select-none caret-transparent">

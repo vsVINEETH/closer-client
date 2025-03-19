@@ -13,7 +13,6 @@ declare global {
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
-// Use global cache in development to prevent multiple instances
 if (!global._mongoClientPromise) {
   client = new MongoClient(uri, options);
   global._mongoClientPromise = client.connect();
