@@ -1,4 +1,5 @@
-FROM node:alpine3.20
+# First stage: Build the application
+FROM node:alpine3.20 AS builder
 
 WORKDIR /app
 
@@ -14,16 +15,16 @@ COPY . .
 # Build TypeScript
 RUN npm run build
 
+# Second stage: Serve with Nginx
+FROM nginx:1.23-alpine
 
-#Serve with Nginx
- FROM nginx:1.23-alpine
+WORKDIR /usr/share/nginx/html
 
- WORKDIR /user/share/nginx/html
+RUN rm -rf *
 
- RUN rm -rf *
+# Copy build artifacts from the builder stage
+COPY --from=builder /app/build .
 
- COPY --from=build /app/build .
- 
- EXPOSE 80
+EXPOSE 80
 
- ENTRYPOINT [ "nginx","-g","daemon off" ]
+ENTRYPOINT [ "nginx", "-g", "daemon off;" ]
