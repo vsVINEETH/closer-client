@@ -24,10 +24,6 @@ RUN rm -rf ./*
 
 # Copy build artifacts from the builder stage
 COPY --from=builder /app/.next .next
-COPY --from=builder /app/public ./public
-
-# Set up Nginx
-COPY nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 80
 
