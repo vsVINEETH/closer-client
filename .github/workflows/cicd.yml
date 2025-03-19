@@ -14,11 +14,15 @@ jobs:
     - name: Checkout Source
       uses: actions/checkout@v4
 
+    - name: Set environment variables
+      run: |
+        echo "MONGO_URI_ATLAS=${{ secrets.MONGO_URI_ATLAS }}" >> .env.local
+
     - name: Login to docker hub
       run: docker login -u ${{ secrets.DOCKER_ID }} -p ${{ secrets.DOCKER_KEY }}
     
     - name: Build Docker Image
-      run: docker build -t vineeth1927/closer-client --build-arg NODE_ENV='development' --build-arg NEXT_PUBLIC_BACKEND_URL='${{ secrets.BACKEND_URL}}' --build-arg NEXTAUTH_URL='${{ secrets.CLIENT_BASE_URL}}' .
+      run: docker build -t vineeth1927/closer-client --build-arg NODE_ENV='development' --build-arg NEXT_PUBLIC_BACKEND_URL='${{ secrets.BACKEND_URL}}' --build-arg NEXTAUTH_URL='${{ secrets.CLIENT_BASE_URL}}' --build-arg MONGO_URI_ATLAS='${{ secrets.MONGO_URI_ATLAS }}' .
     
     - name: Publish Image to docker hub
       run: docker push vineeth1927/closer-client:latest
@@ -32,4 +36,7 @@ jobs:
      - name: Delete old container
        run: docker rm -f nextjs-app-container
      - name: Run Docker Container
-       run: docker run -d -p 3000:80 --name nextjs-app-container -e MONGO_URI_ATLAS=${{ secrets.MONGO_URI_ATLAS }} vineeth1927/closer-client
+       run: docker run -d -p 3000:80 --name nextjs-app-container \
+           -e MONGO_URI_ATLAS=${{ secrets.MONGO_URI_ATLAS }} \
+           vineeth1927/closer-client
+
