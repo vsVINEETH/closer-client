@@ -22,7 +22,7 @@ jobs:
       run: docker login -u ${{ secrets.DOCKER_ID }} -p ${{ secrets.DOCKER_KEY }}
     
     - name: Build Docker Image
-      run: docker build -t vineeth1927/closer-client --build-arg NODE_ENV='development' --build-arg NEXT_PUBLIC_BACKEND_URL='${{ secrets.BACKEND_URL}}' --build-arg NEXTAUTH_URL='${{ secrets.CLIENT_BASE_URL}}' --build-arg MONGO_URI_ATLAS='${{ secrets.MONGO_URI_ATLAS }}' .
+      run: docker build -t vineeth1927/closer-client:latest --build-arg NODE_ENV='development' --build-arg NEXT_PUBLIC_BACKEND_URL='${{ secrets.BACKEND_URL}}' --build-arg NEXTAUTH_URL='${{ secrets.CLIENT_BASE_URL}}' --build-arg MONGO_URI_ATLAS='${{ secrets.MONGO_URI_ATLAS }}' .
     
     - name: Publish Image to docker hub
       run: docker push vineeth1927/closer-client:latest
