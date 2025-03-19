@@ -253,7 +253,7 @@ const CategoryTable: React.FC = () => {
         if (editValidation()) {
          const confirm = await editConfirm();
          if(!confirm){ return };
-         const response = await editCategory(editFormData, searchFilterSortPagination);
+         const response = await editCategory(editFormData as CategoryData, searchFilterSortPagination);
 
         if(response.data){
             setEditModal(false)

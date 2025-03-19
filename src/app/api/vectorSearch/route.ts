@@ -4,7 +4,6 @@ import { MongoDBAtlasVectorSearch } from "@langchain/mongodb";
 
 export async function POST(req: Request) {
   try {
-    console.log('reading')
     const { question } = await req.json();
     if (!question) {
       return new Response(JSON.stringify({ error: "No question provided" }), { status: 400 });

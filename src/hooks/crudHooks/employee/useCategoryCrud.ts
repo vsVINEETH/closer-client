@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useCrudService } from "@/services/employeServices/crudService";
 import { errorToast } from "@/utils/toasts/toast";
-import { CategoryCreateData, SearchFilterSortParams } from "@/types/customTypes";
+import { CategoryCreateData, CategoryData, SearchFilterSortParams } from "@/types/customTypes";
 import { useLoading } from "@/context/LoadingContext";
 
 
@@ -37,7 +37,7 @@ export const useCategoryCrud = () => {
         return response;
     };
 
-    const editCategory = async (updatedCategoryData: any, searchFilterSortParams:SearchFilterSortParams) => {
+    const editCategory = async (updatedCategoryData: CategoryData, searchFilterSortParams:SearchFilterSortParams) => {
         setLoading(true);
         const response = await updateCategory(updatedCategoryData,searchFilterSortParams );
 

@@ -57,13 +57,13 @@ export const messageToast = (image: string | undefined, username: string | undef
     });
   }
 
-  const CustomNotificationToast: React.FC<CustomNotificationToastProps> = ({ image, username, notification }) => {
+  const CustomNotificationToast: React.FC<CustomNotificationToastProps> = ({ image, notification }) => {
 
     return (
       <div className="flex items-center gap-3 p-2">
         <img src={image} alt="User" className="w-10 h-10 rounded-full object-cover" />
         <div>
-          {/* <p className="text-sm font-semibold">{username}</p> */}
+         
           <p className="text-xs text-gray-500">{notification}</p>
         </div>
       </div>

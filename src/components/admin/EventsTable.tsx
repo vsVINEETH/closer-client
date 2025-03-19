@@ -62,10 +62,6 @@ interface PixelCrop {
     height: number;
   }
   
-interface CustomCrop extends Crop {
-aspect?: number;
-}
-
  const columns = [
     { key: "_id", label: "ID", sortable: true },
     { key: "title", label: "Title", sortable: true },
@@ -130,7 +126,6 @@ const EventTable: React.FC = () => {
 
             if(response.data){
                 const data = response.data;
-                console.log(data)
                 setEventData(data.events);
                 setResult(data.events);
                 setTotal(data.total);
@@ -260,7 +255,7 @@ const EventTable: React.FC = () => {
 
           if(!createFormData.eventDate.trim()){
             newErrors.eventDate = 'This field is required'
-          }else if (new Date(createFormData.eventDate).setHours(0,0,0,0) <= new Date().setHours(0,0,0,0)){4
+          }else if (new Date(createFormData.eventDate).setHours(0,0,0,0) <= new Date().setHours(0,0,0,0)){
             newErrors.eventDate = 'choose an future date'
           }          
 
@@ -314,7 +309,7 @@ const EventTable: React.FC = () => {
 
         if(!editFormData?.eventDate.trim()){
             newErrors.eventDate = 'This field is required'
-          }else if (new Date(editFormData.eventDate).setHours(0,0,0,0) < new Date().setHours(0,0,0,0)){4
+          }else if (new Date(editFormData.eventDate).setHours(0,0,0,0) < new Date().setHours(0,0,0,0)){
             newErrors.eventDate = 'choose an future date'
           }   
 
@@ -422,10 +417,10 @@ const EventTable: React.FC = () => {
         setErrors({})
       }
 
-      const handleImageClick = (index: number) => {
-        setCurrentImageIndex(index);
-        setCrop({ aspect: 1 / 1 }  as CustomCrop); // Set square aspect ratio, adjust as needed
-      };
+    //   const handleImageClick = (index: number) => {
+    //     setCurrentImageIndex(index);
+    //     setCrop({ aspect: 1 / 1 }  as CustomCrop); // Set square aspect ratio, adjust as needed
+    //   };
 
       const handleCropComplete = (crop: PixelCrop) => {
         if (imageRef.current && crop.width && crop.height) {

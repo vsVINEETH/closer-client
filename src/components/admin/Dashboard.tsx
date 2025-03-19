@@ -25,7 +25,6 @@ const Dashboard: React.FC = () => {
     const response = await getDashboardData(filterConstraints);
 
     if(response.data){
-      console.log(response.data);
       setDashboardData(response.data);
     };
   }

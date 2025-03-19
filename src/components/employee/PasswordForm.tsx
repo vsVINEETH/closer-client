@@ -1,8 +1,8 @@
 'use client'
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState} from 'react'
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { errorToast, successToast } from '@/utils/toasts/toast';
+import { successToast } from '@/utils/toasts/toast';
 import { useAuth } from '@/hooks/authHooks/useEmployeAuth';
 
 interface Errors {
@@ -26,7 +26,7 @@ export default function PasswordForm() {
   const {changePassword} = useAuth()
 
   const employeeId = useSelector((state: RootState) => state?.employee.employeeInfo?.id);
-  const employeeInfo = useSelector((state: RootState) => state?.employee.employeeInfo)
+  // const employeeInfo = useSelector((state: RootState) => state?.employee.employeeInfo)
 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

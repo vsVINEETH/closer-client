@@ -14,7 +14,21 @@ ChartJS.register(
   );
 
 
-export const getLineChartData = (dashboardData: DBD) => {
+export const getLineChartData = (dashboardData: DBD):{ 
+    labels: string[]; 
+    datasets: { 
+      label: string; 
+      data: number[]; 
+      borderColor: string; 
+      backgroundColor: string; 
+      fill: boolean; 
+      tension: number; 
+      pointRadius: number; 
+      pointBackgroundColor: string; 
+      pointBorderColor: string; 
+      pointBorderWidth: number;
+    }[] 
+} => {
   const monthNames = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun",
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
@@ -97,7 +111,17 @@ export const getLineChartData = (dashboardData: DBD) => {
     },
   };
   
-  export const getBarChartData = (dashboardData: DBD) => {
+  export const getBarChartData = (dashboardData: DBD):{
+    labels: string[];
+    datasets: {
+      label: string;
+      data: number[];
+      backgroundColor: string;
+      borderColor: string;
+      borderWidth: number;
+      borderRadius: number;
+    }[];
+  } => {
     // Define months order
     const monthNames = [
       "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -183,7 +207,14 @@ export const getLineChartData = (dashboardData: DBD) => {
     },
   };
   
-  export const getPieChartData = (dashboardData: DBD) => ({
+  export const getPieChartData = (dashboardData: DBD):{ 
+    labels: string[]; 
+    datasets: { 
+      data: number[];
+      backgroundColor: string[];
+      borderColor: string;
+      borderWidth: number;
+    }[] } => ({
     labels: dashboardData.userData.genderSplit.map((item) => item._id),
     datasets: [
       {

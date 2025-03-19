@@ -108,7 +108,7 @@ const EventPaymentCard: React.FC<PaymentCardProps> = ({ id }) => {
             name: 'Closer Premium',
             description: `Event booking`,
             order_id: id,
-            handler: async (response: any) => {
+            handler: async (response: {razorpay_order_id: string, razorpay_payment_id: string,  razorpay_signature: string }) => {
               try {
                 // Verify payment on backend
                 const verificationResponse = await verifyPaymentForEvent({

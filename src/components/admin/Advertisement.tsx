@@ -9,8 +9,6 @@ import { useAdvertisementCrud } from '@/hooks/crudHooks/admin/useAdvertisementCr
 import NoContent from '../reusables/NoContent';
 import DataTable from '../reusables/Table';
 import { useDebounce } from '@/hooks/helperHooks/useDebounce';
-import {useThrottle} from '@/hooks/helperHooks/useThrottle';
-import { useQuery } from '@tanstack/react-query';
 
 interface AdvertisementData {
     id: string,
@@ -128,7 +126,6 @@ const AdvertisementTable: React.FC = () => {
             const response = await getAdvertisementData(searchFilterSortPagination);
             if(response.data){
               const advertisementData = response.data;
-              console.log(advertisementData.advertisement)
               setAdvertisementData(advertisementData.advertisement);
               setResult(advertisementData.advertisement);
               setTotal(advertisementData.total);
@@ -158,7 +155,6 @@ const AdvertisementTable: React.FC = () => {
             
             if(response.data){
                 const advertisementData = response.data.data
-                console.log(advertisementData.advertisement)
                 setAdvertisementData(advertisementData.advertisement);
                 setResult(advertisementData.advertisement);
                 setTotal(advertisementData.total);

@@ -1,5 +1,5 @@
 import useAxios from "@/hooks/axiosHooks/useAxios";
-import { CategoryCreateData, SearchFilterSortParams } from "@/types/customTypes";
+import { CategoryCreateData, SearchFilterSortParams, ContentData, CategoryData } from "@/types/customTypes";
 export const useCrudService = () => {
     const {handleRequest} = useAxios();
 
@@ -37,7 +37,7 @@ export const useCrudService = () => {
         })
     };
 
-    const updateContent = async (updatedContentData: any | object, searchFilterSortParams: SearchFilterSortParams) => {
+    const updateContent = async (updatedContentData: ContentData, searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
             url:'/api/employee/update_content',
             method:'PATCH',
@@ -67,7 +67,7 @@ export const useCrudService = () => {
         })
     };
 
-    const updateCategory = async (updatedCategoryData: any | object, searchFilterSortParams: SearchFilterSortParams) => {
+    const updateCategory = async (updatedCategoryData: CategoryData, searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
             url:'/api/employee/update_category',
             method:'PUT',

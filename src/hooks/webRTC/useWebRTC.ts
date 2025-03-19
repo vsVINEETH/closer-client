@@ -194,7 +194,7 @@ export const useWebRTC = () => {
       socket.off('answer', handleAnswer);
       socket.off('ice-candidate', handleNewICECandidateMsg);
     };
-  }, [socket]);
+  }, [socket, createOffer]);
 
   return {
     localStream: localStreamRef.current,

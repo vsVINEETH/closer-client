@@ -18,7 +18,7 @@ interface ContentData {
     image?:string,
     isListed: boolean,
     createdAt: string,
-    category?: string | any,
+    category?: any,
 }
 
 interface createFormData {
@@ -430,8 +430,8 @@ const ContentTable: React.FC = () => {
     const handleEditClick = (data: ContentData) => {
     setEditFormData({
         ...data,
-        category: data.category?._id || ''
-    });
+        category: data.category?._id ||''
+      });
     setEditModal(true);
     };
 
@@ -442,7 +442,7 @@ const ContentTable: React.FC = () => {
           const confirm = await editConfirm();
           if(!confirm) {return}
           
-         const response = await editContent(editFormData, searchFilterSortPagination)
+         const response = await editContent(editFormData as ContentData, searchFilterSortPagination)
 
         if(response.data){
             setEditModal(false)

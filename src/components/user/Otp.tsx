@@ -176,7 +176,7 @@ const Otp: React.FC = () => {
       </div>
 
       <p className="mt-6 text-xs text-gray-600 dark:text-lightGray text-center">
-        Haven't received an OTP ?{" "}
+        Haven&apos;t received an OTP ?{" "}
         {show && (
           <span className="text-customPink dark:text-lightGray font-semibold">
             {" "}
