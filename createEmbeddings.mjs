@@ -8,7 +8,7 @@ import { configDotenv } from "dotenv";
 
 configDotenv({ path: ".env.local" });
 
-const client = new MongoClient(process.env.MONGO_URI_ATLAS|| "");
+const client = new MongoClient('mongodb+srv://vineethvs1927:6TRgQ75lvH67BV32@cluster0.wtkmo.mongodb.net/closer?retryWrites=true&w=majority&appName=Cluster0' || process.env.MONGO_URI_ATLAS|| "");
 const dbName = "closer";
 const collectionName = "queries";
 const collection = client.db(dbName).collection(collectionName);
