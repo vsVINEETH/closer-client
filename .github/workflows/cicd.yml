@@ -38,5 +38,5 @@ jobs:
      - name: Run Docker Container
        run: docker run -d -p 3000:80 --name nextjs-app-container \
            -e MONGO_URI_ATLAS=${{ secrets.MONGO_URI_ATLAS }} \
-           vineeth1927/closer-client
+           vineeth1927/closer-client:latest
 
