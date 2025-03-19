@@ -24,7 +24,6 @@ RUN rm -rf ./*
 
 # Copy build artifacts from the builder stage
 COPY --from=builder /app/.next .next
-COPY --from=builder /app/public ./public
 
 EXPOSE 80
 
