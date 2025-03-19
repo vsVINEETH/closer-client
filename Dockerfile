@@ -12,7 +12,7 @@ RUN npm install
 # Copy source code
 COPY . .
 
-# Build TypeScript
+# Build Next.js
 RUN npm run build
 
 # Second stage: Serve with Nginx
@@ -20,10 +20,14 @@ FROM nginx:1.23-alpine
 
 WORKDIR /usr/share/nginx/html
 
-RUN rm -rf *
+RUN rm -rf ./*
 
 # Copy build artifacts from the builder stage
-COPY --from=builder /app/build .
+COPY --from=builder /app/.next .next
+COPY --from=builder /app/public ./public
+
+# Set up Nginx
+COPY nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 80
 
