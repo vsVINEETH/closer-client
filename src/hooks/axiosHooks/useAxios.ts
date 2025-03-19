@@ -1,5 +1,5 @@
 'use client';
-import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
@@ -132,12 +132,13 @@ const useAxios = <T = any>(): UseAxiosReturn<T> => {
       setError(null);
 
       return { data: result.data };
-    } catch (error: any) {
+    } catch (error: unknown) {
 
       if (axios.isCancel(error)) {
         console.warn("Request was cancelled", error.message);
       } else {
-        const errorMessage = error.response ? error.response.data.message : error.message;
+        const axiosError = error as AxiosError<{ message: string }>;
+        const errorMessage = axiosError.response?.data?.message || axiosError.message || "An unknown error occurred";
         setError(errorMessage);
         return { error: errorMessage };
       }

@@ -125,10 +125,10 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
     }
   
     try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = !isVoiceCall
-        ? devices.filter((device) => device.kind === "videoinput")
-        : devices.filter((device) => device.kind === "audioinput");
+      //const devices = await navigator.mediaDevices.enumerateDevices();
+      // const videoDevices = !isVoiceCall
+      //   ? devices.filter((device) => device.kind === "videoinput")
+      //   : devices.filter((device) => device.kind === "audioinput");
   
       const constraints: MediaStreamConstraints = isAudio || isVoiceCall
         ? { audio: true, video: false }
@@ -280,7 +280,7 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
     });
 
     // Debug peer connection states
-    const rtcPeerConnection: RTCPeerConnection = (peer as any)._pc;
+    const rtcPeerConnection: RTCPeerConnection = (peer as unknown as { _pc: RTCPeerConnection })._pc;
 
     rtcPeerConnection.oniceconnectionstatechange = () => {
       console.log("ICE Connection State:", rtcPeerConnection.iceConnectionState);
@@ -566,7 +566,7 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
 
   //call timing
   useEffect(() => {
-    let intervalRef:any;
+    let intervalRef: ReturnType<typeof setInterval>;
     if(peer?.peerConnection){
       intervalRef = setInterval(() => {
         setCallDuration( prev => prev + 1);

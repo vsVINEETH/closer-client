@@ -7,8 +7,7 @@ const uri = process.env.MONGO_URI_ATLAS as string; // Ensure you have this in .e
 const options = {};
 
 let client: MongoClient;
-let mongoClientPromise: Promise<MongoClient>;
-
+//let mongoClientPromise: Promise<MongoClient>;
 
 declare global {
   var _mongoClientPromise: Promise<MongoClient> | undefined;
@@ -20,6 +19,6 @@ if (!global._mongoClientPromise) {
   global._mongoClientPromise = client.connect();
 }
 
-mongoClientPromise = global._mongoClientPromise;
+const mongoClientPromise: Promise<MongoClient> = global._mongoClientPromise;
 
 export default mongoClientPromise;

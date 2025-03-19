@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link'
 import { useRouter } from 'next/navigation';
 import { useFetch } from '@/hooks/fetchHooks/useUserFetch';
+import { SubscriptionData } from '@/types/customTypes';
 
 const Subscription: React.FC = () => {
   const [subscriptions, setSubscriptions] = useState([]);
@@ -62,7 +63,7 @@ const Subscription: React.FC = () => {
 
       {/* Subscription Plans */}
       <div className="flex justify-center items-center mt-6 space-x-4">
-        {subscriptions?.filter((plan: any) => plan.isListed).map((plan: any) => (
+        {subscriptions?.filter((plan: SubscriptionData) => plan.isListed).map((plan: SubscriptionData) => (
           <div
             key={plan._id}
             onClick={() => handlePlanSelect(plan._id)}

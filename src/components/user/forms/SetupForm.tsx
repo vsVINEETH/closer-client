@@ -186,11 +186,11 @@ const SetupForm: React.FC = () => {
       const response = await setupAccount(formData);
 
       if(response.data){
-        
+        console.log(response.data)
        const user = response.data.user;
         dispatch(
           login({ id:user.id, username:user.username, 
-            email: user.email, image: user.image, phone: user.phone, 
+            email: user.email,prime: user.prime, image: user.image, phone: user.phone, 
             birthday: user.dob, lookingFor: user.lookingFor,
             interestedIn: user.interestedIn,
           })

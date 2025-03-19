@@ -112,7 +112,7 @@ const ProSidebar: React.FC = () => {
               Prime Discovery 
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Preferences show you people who match your vibe, but won't limit
+              Preferences show you people who match your vibe, but won&apos;t limit
               who you see - you will still be able to match with people outside
               your selections.
             </p>

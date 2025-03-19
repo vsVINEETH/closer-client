@@ -6,14 +6,14 @@ import {SubscriptionPaymentWalletData, SubscriptionPaymentData,
 export const useUserInteractionService = () => {
     const {handleRequest} = useAxios();
 
-    const controllBlogVoting = async (userId: string, blogId: string, votetype: string) => {
+    const controllBlogVoting = async (userId: string, blogId: string, voteType: string) => {
         return await handleRequest({
             url: '/api/user/content_vote',
             method: 'PATCH',
             data: {
                 id: userId,
                 blogId,
-                votetype,
+                voteType,
             }
         })
     };

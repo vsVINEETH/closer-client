@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { ReactElement } from "react";
 import { useRouter } from "next/navigation";
 import { Wallet, Shield, LogOut, ShieldBanIcon,  TicketCheck  } from "lucide-react";
 import { infoToast } from "@/utils/toasts/toast";
@@ -8,6 +8,13 @@ import { RootState } from "@/store";
 import { useSelector } from "react-redux";
 import { logoutConfirm } from "@/utils/sweet_alert/sweetAlert";
 import { useAuth } from "@/hooks/authHooks/useUserAuth";
+
+interface settingKeys {
+  icon: ReactElement;
+  text: string;
+  url?: string; // Make URL optional since some items have `action` instead
+  action?: string;
+}
 
 const settingsItems = [
   { icon: <Wallet size={18} />, text: "Wallet", url: "/user/wallet" },
@@ -38,7 +45,7 @@ const DropDown: React.FC = () => {
       return;
   };
 
-  const handleItemClick = (item: any): void => {
+  const handleItemClick = (item: settingKeys): void => {
     if (item.action === "logout") {
       proceedLogout();
     } else if (item.url) {

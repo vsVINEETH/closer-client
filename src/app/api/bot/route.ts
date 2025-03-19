@@ -7,7 +7,6 @@ export const runtime = "edge";
 
 export async function POST(req: Request) {
   try {
-    console.log('inconimg')
     const { messages }: { messages: Message[] } = await req.json();
     const currentMessageContent = messages[messages.length - 1]?.content;
     const locale = cookies().get('language')?.value || 'en';

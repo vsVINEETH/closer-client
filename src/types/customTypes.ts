@@ -294,3 +294,31 @@ export interface UserDTO {
   setupCompleted?: boolean
   createdAt?: string | Date
 }
+
+
+
+export interface ContentData {
+  id: string,
+  title: string,
+  subtitle: string,
+  content:string,
+  image?:string,
+  isListed: boolean,
+  createdAt: string,
+  category?: string | any,
+}
+
+export interface CategoryData {
+  id: string,
+  name: string,
+  createdAt: string,
+  isListed: boolean,
+}
+
+export interface CreateContentData {
+  title: string,
+  subtitle: string,
+  content: string,
+  image:File[],
+  category: string
+}

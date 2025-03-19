@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useCrudService } from "@/services/employeServices/crudService";
 import { errorToast } from "@/utils/toasts/toast";
 import { useLoading } from "@/context/LoadingContext";
-import { SearchFilterSortParams } from "@/types/customTypes";
+import { ContentData, SearchFilterSortParams } from "@/types/customTypes";
 
 export const useContentCrud = () => {
     const {postContent, listContent, deleteContent, updateContent}  = useCrudService()
@@ -50,7 +50,7 @@ export const useContentCrud = () => {
         return response;
     };
 
-    const editContent = async (updatedContentData: any | object, searchFilterSortParams: SearchFilterSortParams) => {
+    const editContent = async (updatedContentData: ContentData , searchFilterSortParams: SearchFilterSortParams) => {
         setLoading(true);
         const response = await updateContent(updatedContentData, searchFilterSortParams);
 

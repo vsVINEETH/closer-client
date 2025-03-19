@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Mic, SendHorizonal, Trash, Video, Phone, Check, CheckCheck, ChevronDown } from 'lucide-react'; 
+import { Mic, SendHorizonal, Trash, Video, Phone, Check, CheckCheck } from 'lucide-react'; 
 import { useSearchParams, usePathname } from 'next/navigation';
 import { useSocket, SocketUser } from '@/context/SocketContext2';
 import { useSelector } from 'react-redux';
@@ -311,7 +311,7 @@ const Chat: React.FC = () => {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {e.key === 'Enter'? handleSend() : 0}}
+          onKeyDown={(e) => e.key === 'Enter' ? handleSend() : null}
           placeholder="Type a message..."
           className="flex-grow p-2 border rounded-lg dark:border-gray-700 dark:text-white dark:bg-nightBlack"
         />

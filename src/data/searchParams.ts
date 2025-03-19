@@ -1,5 +1,3 @@
-import { SearchFilterSortParams } from "@/types/customTypes";
-
 interface FilterOption {
     startDate: string,
     endDate: string,

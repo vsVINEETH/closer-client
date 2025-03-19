@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { errorToast, infoToast, successToast, warnToast } from '@/utils/toasts/toast';
+import { errorToast, infoToast, successToast } from '@/utils/toasts/toast';
 import { handlePaymentSuccess, paymentConfirm } from '@/utils/sweet_alert/sweetAlert';
 import { useSelector, useDispatch } from 'react-redux';
 import { updatePrimeStatus } from '@/store/slices/userSlice';
