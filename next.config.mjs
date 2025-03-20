@@ -3,6 +3,11 @@ import createNextIntlPlugin from 'next-intl/plugin';
 const withNextIntl = createNextIntlPlugin();
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'export', // Enable static export
+  trailingSlash: true, // Ensures correct routing
+  images: {
+    unoptimized: true, // Fix issues with Next.js images in static export
+  },
     async rewrites() {
       return [
         {
