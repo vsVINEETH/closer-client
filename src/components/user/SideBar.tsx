@@ -4,7 +4,7 @@ import { RootState } from "@/store";
 import { useSelector } from "react-redux";
 import Link from "next/link";
 import { HiArrowLeft, HiArrowRight } from "react-icons/hi";
-import { BellRing, MessageSquareText, Users, ThumbsUp, ThumbsDown } from "lucide-react";
+import { BellRing, MessageSquareText, Users, ThumbsUp, ThumbsDown, UserRoundX } from "lucide-react";
 import { successToast } from "@/utils/toasts/toast";
 import { useRouter } from "next/navigation";
 import { useSocket} from "@/context/SocketContext2";
@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useFetch } from "@/hooks/fetchHooks/useUserFetch";
 import { useTranslations } from "next-intl";
 import Tooltip from "../reusables/ToolTip";
+import { unmatchConfirm } from "@/utils/sweet_alert/sweetAlert";
 
 interface Notification {
   id: string;
@@ -274,8 +275,10 @@ const SideBar: React.FC = () => {
     setNotifications((prev) => prev.filter((_, i) => i !== index)); // Remove rejected notification
   };
 
-  const handleUnmatch = async (interactorId: string) => {
+  const handleUnmatch = async (interactorId: string, username: string) => {
     if(!userInfo?.id) return;
+    const confirm = await unmatchConfirm(username)
+    if(!confirm) return;
     const response = await unmatchUser(userInfo?.id, interactorId)
 
     if(response.data){
@@ -439,15 +442,15 @@ const SideBar: React.FC = () => {
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                   >
-                    Chat
+                    <MessageSquareText size={20}/>
                   </motion.button>
                   <motion.button
                     className="px-2 py-1 text-sm font-medium text-white bg-red-500 rounded hover:bg-red-600"
-                    onClick={() => handleUnmatch(match._id)}
+                    onClick={() => handleUnmatch(match._id, match.username)}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                   >
-                    Unmatch
+                    <UserRoundX size={20}/>
                   </motion.button>
                 </div>
               </motion.div>
@@ -506,37 +509,28 @@ const SideBar: React.FC = () => {
       </div>
 
       {/* Navigation Menu */}
-      <nav className="py-4 flex flex-col space-y-2 lg:flex-row lg:space-x-4 lg:justify-between lg:px-4">
+      <nav className="py-4 flex flex-wrap lg:flex-nowrap items-center justify-center lg:justify-between px-4 space-x-2">
+        {menuItems.map((item, index) => (
+          <Tooltip text={item.text} key={index}>
+            <motion.button
+              key={item.key}
+              onClick={() => setActiveTab(item.key)}
+              className={`relative flex-1 min-w-[80px] max-w-full truncate inline-flex items-center px-4 py-2 justify-center text-gray-600 
+                hover:text-gray-900 dark:hover:text-gray-400 dark:text-lightGray`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              {item.key === "notifications" && notifications.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {notifications.length}
+                </span>
+              )}
 
-      {menuItems.map((item, index) => (
-        <Tooltip text={item.text} key={index}>
-
-          <motion.button
-            key={item.key}
-            onClick={() => setActiveTab(item.key)}
-            className={`flex-1 inline-flex items-center px-4 py-2 justify-center text-gray-600 hover:text-gray-900 dark:hover:text-gray-400 dark:text-lightGray 
-             
-              max-w-full truncate`}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-          
-          {item.key === "notifications" && notifications.length > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-            {notifications.length}
-          </span>
-        )}
-
-       {/* {item.key === "matches" && matches.length > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-            {matches.length}
-          </span>
-        )} */}
-          <span className={` ${activeTab === item.key ? "font-bold text-black  dark:text-customPink" : ""}`}>{item.icon}</span>
-          
-        </motion.button>
-
-        </Tooltip>
+              <span className={` ${activeTab === item.key ? "font-bold text-black dark:text-customPink" : ""}`}>
+                {item.icon}
+              </span>
+            </motion.button>
+          </Tooltip>
         ))}
       </nav>
 

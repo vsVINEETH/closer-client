@@ -9,6 +9,7 @@ import { deleteConfirm, editConfirm } from '@/utils/sweet_alert/sweetAlert'
 import { useFetch } from '@/hooks/fetchHooks/useUserFetch';
 import useAxios from '@/hooks/axiosHooks/useAxios'
 import { motion} from "framer-motion";
+import { useTranslations } from "next-intl";
 
 interface Profile {
   username: string | undefined
@@ -55,7 +56,7 @@ const optionsMap: Record<string, { label: string; value: string }[]> = {
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, onSave, fieldName, currentValue }) => {
   const [value, setValue] = useState(currentValue || "");
   const [error, setError] = useState<Errors>({});
-
+  const t = useTranslations('Prosidebar');
   useEffect(() => {
     if (isOpen) {
       setValue(currentValue || "");

@@ -148,6 +148,21 @@ export const listUnlistConfirm = async (isListing: boolean): Promise<boolean> =>
   return result.isConfirmed;
 };
 
+export const unmatchConfirm = async (username: string): Promise<boolean> => {
+  const result = await Swal.fire({
+    title: `Are you sure ?`,
+    text:  `Do you want to unmatch ${username}`,
+    icon: "info",
+    showCancelButton: true,
+    confirmButtonText: "Yes, Unmatch",
+    cancelButtonText: "No, Cancel",
+    confirmButtonColor: "#28a745",
+    cancelButtonColor: "#6c757d",
+  });
+
+  return result.isConfirmed
+}
+
 
 export const handlePaymentSuccess =  async (isWallet: boolean) => {
   const result = await Swal.fire({
