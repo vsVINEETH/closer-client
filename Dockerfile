@@ -1,4 +1,4 @@
-# First stage: Build the application
+# First stage: Build the Next.js application
 FROM node:alpine3.20 AS builder
 
 WORKDIR /app
@@ -13,7 +13,7 @@ RUN npm install
 COPY . .
 
 # Build Next.js
-RUN npm run build
+RUN npm run build && npm run export
 
 # Second stage: Serve with Nginx
 FROM nginx:1.23-alpine
@@ -22,8 +22,8 @@ WORKDIR /usr/share/nginx/html
 
 RUN rm -rf ./*
 
-# Copy build artifacts from the builder stage
-COPY --from=builder /app/.next .next
+# Copy static exported files
+COPY --from=builder /app/out/ /usr/share/nginx/html/
 
 EXPOSE 80
 
