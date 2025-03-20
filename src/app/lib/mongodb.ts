@@ -3,7 +3,7 @@ import "dotenv/config";
 import { configDotenv } from "dotenv";
 configDotenv({ path: ".env.local" });
 
-const mongoUri = process.env.MONGO_URI_ATLAS || 'mongodb+srv://vineethvs1927:6TRgQ75lvH67BV32@cluster0.wtkmo.mongodb.net/closer?retryWrites=true&w=majority&appName=Cluster0';
+const mongoUri = process.env.MONGO_URI_ATLAS || '';
 if (!mongoUri) {
   throw new Error("MONGO_URI_ATLAS is not set. Check your environment variables.");
 }
