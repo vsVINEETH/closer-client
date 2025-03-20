@@ -11,7 +11,7 @@ const nextConfig = {
         },
         {
           source: '/api/:path*',
-          destination: 'http://localhost:5000/api/:path*' // Backend port
+          destination: 'https://api.appcloser.xyz/api/:path*' // Backend port
         },
 
       ];
