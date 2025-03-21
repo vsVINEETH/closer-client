@@ -107,7 +107,7 @@ const SideBar: React.FC = () => {
         };
       
         if (existingIndex !== -1) {
-          const existingMessages = updatedMessages[existingIndex].messages.messages;
+          const existingMessages = updatedMessages[existingIndex]?.messages.messages;
         if (!existingMessages.some((msg) => msg._id === formattedMessage._id)) {
           updatedMessages[existingIndex] = {
             ...updatedMessages[existingIndex],
@@ -216,8 +216,8 @@ const SideBar: React.FC = () => {
 
     if (response.data) {
       setMatches(response.data.matches.matches)
-      console.log(response.data.messages)
-      setMessages(response.data.messages);
+      console.log(response.data?.messages)
+      setMessages(response.data?.messages);
     }
   };
 
@@ -335,7 +335,7 @@ const SideBar: React.FC = () => {
                 matches?.map((match) => {
                   const relevantMessages = messages.filter(
                     (val) =>
-                      val.pair === `${match._id}-${userInfo?.id}` ||
+                      val.pair === `${match?._id}-${userInfo?.id}` ||
                       val.pair === `${userInfo?.id}-${match._id}`
                   );
 
@@ -382,7 +382,7 @@ const SideBar: React.FC = () => {
                             transition={{ duration: 0.2 }}
                             className="px-2 py-1 text-xs font-bold text-white bg-red-500 rounded-full"
                           >
-                            {latestMessage.messages.unreadCount}
+                            {latestMessage?.messages?.unreadCount}
                           </motion.span>
                         ) : null}
                         <p className="text-xs text-gray-500 dark:text-gray-400">
