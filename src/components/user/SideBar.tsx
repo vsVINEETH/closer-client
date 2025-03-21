@@ -340,7 +340,7 @@ const SideBar: React.FC = () => {
                   const relevantMessages = messages.filter(
                     (val) =>
                       val.pair === `${match?._id}-${userInfo?.id}` ||
-                      val.pair === `${userInfo?.id}-${match._id}`
+                      val.pair === `${userInfo?.id}-${match?._id}`
                   );
 
                   const latestMessage =
