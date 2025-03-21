@@ -298,7 +298,7 @@ const SideBar: React.FC = () => {
         <AnimatePresence>
           {notifications.map((item, index) => (
             <motion.div
-              key={item.id}
+              key={item?.id}
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
@@ -352,13 +352,13 @@ const SideBar: React.FC = () => {
       
                   return (
                     <motion.div
-                      key={match._id}
+                      key={match?._id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
                       transition={{ duration: 0.3 }}
                       className="flex items-center justify-between p-4 bg-gray-100 dark:bg-darkGray rounded-lg shadow-md transition-all duration-200 hover:bg-gray-200 dark:hover:bg-black cursor-pointer"
-                      onClick={() => router.replace(`/user/chat/?id=${match._id}`)}
+                      onClick={() => router.replace(`/user/chat/?id=${match?._id}`)}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
@@ -418,7 +418,7 @@ const SideBar: React.FC = () => {
           <AnimatePresence>
             {matches?.map((match) => (
               <motion.div
-                key={match._id}
+                key={match?._id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
@@ -430,18 +430,18 @@ const SideBar: React.FC = () => {
                 <div className="flex items-center space-x-4">
                   <motion.img
                     src={match?.image[0] || "/default-avatar.png"}
-                    alt={`${match.username}'s avatar`}
+                    alt={`${match?.username}'s avatar`}
                     className="w-10 h-10 rounded-full object-cover border border-gray-300 dark:border-gray-700"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.5 }}
                   />
-                  <p className="font-bold text-gray-700 dark:text-white">{match.username}</p>
+                  <p className="font-bold text-gray-700 dark:text-white">{match?.username}</p>
                 </div>
                 <div className="flex space-x-2">
                   <motion.button
                     className="px-2 py-1 text-sm font-medium text-white bg-customPink rounded hover:bg-customPink"
-                    onClick={() => router.replace(`/user/chat/?id=${match._id}`)}
+                    onClick={() => router.replace(`/user/chat/?id=${match?._id}`)}
 
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
@@ -450,7 +450,7 @@ const SideBar: React.FC = () => {
                   </motion.button>
                   <motion.button
                     className="px-2 py-1 text-sm font-medium text-white bg-red-500 rounded hover:bg-red-600"
-                    onClick={() => handleUnmatch(match._id, match.username)}
+                    onClick={() => handleUnmatch(match?._id, match?.username)}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                   >
@@ -515,23 +515,23 @@ const SideBar: React.FC = () => {
       {/* Navigation Menu */}
       <nav className="py-4 flex flex-wrap lg:flex-nowrap items-center justify-center lg:justify-between px-4 space-x-2">
         {menuItems.map((item, index) => (
-          <Tooltip text={item.text} key={index}>
+          <Tooltip text={item?.text} key={index}>
             <motion.button
-              key={item.key}
-              onClick={() => setActiveTab(item.key)}
+              key={item?.key}
+              onClick={() => setActiveTab(item?.key)}
               className={`relative flex-1 min-w-[80px] max-w-full truncate inline-flex items-center px-4 py-2 justify-center text-gray-600 
                 hover:text-gray-900 dark:hover:text-gray-400 dark:text-lightGray`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              {item.key === "notifications" && notifications.length > 0 && (
+              {item?.key === "notifications" && notifications.length > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                   {notifications.length}
                 </span>
               )}
 
-              <span className={` ${activeTab === item.key ? "font-bold text-black dark:text-customPink" : ""}`}>
-                {item.icon}
+              <span className={` ${activeTab === item?.key ? "font-bold text-black dark:text-customPink" : ""}`}>
+                {item?.icon}
               </span>
             </motion.button>
           </Tooltip>
