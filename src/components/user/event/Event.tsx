@@ -138,7 +138,7 @@ const Event: React.FC = () => {
                   onClick={() => router.push(`/user/events/${event._id}`)}
                   className="w-full mt-4 py-2 text-white font-semibold rounded-lg bg-customPink dark:bg-gray-600 hover:opacity-90 hover:scale-[1.02] transition-transform duration-300"
                 >
-                  {event.slots <= 0 ? 'Slod out' :'Book Now'}
+                  {event.slots <= 0 ? 'Sold out' :'Book Now'}
                 </button>
             </div>
           </div>
