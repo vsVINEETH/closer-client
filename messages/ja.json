@@ -54,7 +54,52 @@
   "matches": "マッチ",
   "messages": "メッセージ",
   "notifications": "通知"
-}
+},
 
+    "Dropdown": {
+      "wallet": "ウォレット",
+      "security": "セキュリティ",
+      "blockedUsers": "ブロックされたユーザー",
+      "bookedEvent": "確認済みのイベント",
+      "logout": "ログアウト"
+    },
+
+      "TableHeadline": {
+        "events": "あなたのための今後のイベント",
+        "blogs": "関係を深める",
+        "blockedUsers": "ブロックされたユーザー",
+        "confirmedEvents": "確認済みのイベント"
+      },
+    
+      "Prosidebar": {
+        "primeDiscovery": "プライムディスカバリー",
+        "description": "好みはあなたに合った人を表示しますが、見る相手を制限するものではありません – 選択肢の外の人ともマッチできます",
+        "agePreference": "年齢の好み",
+        "distancePreference": "距離の好み",
+        "interestedIn": "興味のあるもの",
+        "selectAnOption": "オプションを選択",
+        "female": "女性",
+        "male": "男性",
+        "other": "その他",
+        "lookingFor": "探しているもの",
+        "findNewFriends": "新しい友達を見つける",
+        "shortTerm": "短期間の関係",
+        "longTerm": "長期間の関係",
+        "stillFigure": "まだ考え中",
+        "username": "ユーザー名",
+        "phone": "電話番号",
+        "dob": "生年月日",
+        "yourGallery": "あなたのギャラリー"
+      },
+    
+      "PaginationFilter": {
+        "previous": "前へ",
+        "page": "ページ",
+        "of": "の",
+        "next": "次へ",
+        "newest": "最新",
+        "oldest": "最古"
+      }
+   
   }
   

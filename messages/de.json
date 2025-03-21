@@ -52,10 +52,57 @@
     },
 
     "Sidebar": {
-  "matches": "Übereinstimmungen",
-  "messages": "Nachrichten",
-  "notifications": "Benachrichtigungen"
-}
+    "matches": "Übereinstimmungen",
+    "messages": "Nachrichten",
+    "notifications": "Benachrichtigungen"
+  },
 
-  }
+  
+    "Dropdown": {
+      "wallet": "Brieftasche",
+      "security": "Sicherheit",
+      "blockedUsers": "Blockierte Benutzer",
+      "bookedEvent": "Bestätigte Ereignisse",
+      "logout": "Abmelden"
+    },
+
+    
+      "TableHeadline": {
+        "events": "Bevorstehende Veranstaltungen für dich",
+        "blogs": "Verbessere deine Beziehungen",
+        "blockedUsers": "Blockierte Benutzer",
+        "confirmedEvents": "Bestätigte Ereignisse"
+      },
+      
+      "Prosidebar": {
+        "primeDiscovery": "Prime Discovery",
+        "description": "Präferenzen zeigen dir Personen, die zu deinem Vibe passen, aber sie begrenzen nicht, wen du sehen kannst – du kannst weiterhin mit Personen außerhalb deiner Auswahl übereinstimmen",
+        "agePreference": "Alterspräferenz",
+        "distancePreference": "Entfernungseinstellung",
+        "interestedIn": "Interessiert an",
+        "selectAnOption": "Wähle eine Option",
+        "female": "Weiblich",
+        "male": "Männlich",
+        "other": "Andere",
+        "lookingFor": "Suche nach",
+        "findNewFriends": "Neue Freunde finden",
+        "shortTerm": "Kurzfristige Beziehung",
+        "longTerm": "Langfristige Beziehung",
+        "stillFigure": "Noch unentschlossen",
+        "username": "Benutzername",
+        "phone": "Telefon",
+        "dob": "Geburtsdatum",
+        "yourGallery": "Deine Galerie"
+      },
+    
+      "PaginationFilter": {
+        "previous": "Zurück",
+        "page": "Seite",
+        "of": "von",
+        "next": "Weiter",
+        "newest": "Neueste",
+        "oldest": "Älteste"
+      }
+  
+}
   
