@@ -305,12 +305,12 @@ const SideBar: React.FC = () => {
               transition={{ duration: 0.3 }}
               className="flex items-center justify-between p-4 bg-gray-100 dark:bg-darkGray rounded-md shadow-md"
             >
-              <p className="text-gray-700 dark:text-white">{item.message}</p>
+              <p className="text-gray-700 dark:text-white">{item?.message}</p>
               <div className="flex space-x-2">
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => handleAcceptNotification(index, item.id, item.interactor)}
+                  onClick={() => handleAcceptNotification(index, item?.id, item?.interactor)}
                   className="px-2 py-1 text-sm font-medium text-white bg-green-500 rounded hover:bg-green-600"
                 >
                   <ThumbsUp/>
@@ -318,7 +318,7 @@ const SideBar: React.FC = () => {
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => handleRejectNotification(index, item.id, item.interactor)}
+                  onClick={() => handleRejectNotification(index, item?.id, item?.interactor)}
                   className="px-2 py-1 text-sm font-medium text-white bg-red-500 rounded hover:bg-red-600"
                 >
                  <ThumbsDown/>
