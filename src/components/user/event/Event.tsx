@@ -43,7 +43,7 @@ const Event: React.FC = () => {
     search: debouncedSearch || '',
     startDate: filterOption.startDate || '',
     endDate: filterOption.endDate || '',
-    status: filterOption.status ,
+    status: true,
     sortColumn: 'createdAt',
     sortDirection: sortOption === 'Newest' ? 'desc' : 'asc',
     page: currentPage,
@@ -134,6 +134,7 @@ const Event: React.FC = () => {
                 <p className="text-gray-600 dark:text-gray-300 text-sm mt-2 line-clamp-3">{event.description}</p>
 
                 <button
+                  disabled={event.slots < 0}
                   onClick={() => router.push(`/user/events/${event._id}`)}
                   className="w-full mt-4 py-2 text-white font-semibold rounded-lg bg-customPink dark:bg-gray-600 hover:opacity-90 hover:scale-[1.02] transition-transform duration-300"
                 >
