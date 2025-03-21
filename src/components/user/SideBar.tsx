@@ -211,15 +211,19 @@ const SideBar: React.FC = () => {
   };
 
   const fetchMessages = async () => {
-    if(!userInfo?.id) return;
-    const response = await getMessages(userInfo?.id)
-
-    if (response.data) {
-      setMatches(response.data.matches.matches)
-      console.log(response.data?.messages)
-      setMessages(response.data?.messages);
+    if (!userInfo?.id) return;
+    try {
+      const response = await getMessages(userInfo.id);
+  
+      if (response?.data) {
+        setMatches(response?.data?.matches?.matches ?? []);
+        setMessages(response?.data?.messages ?? []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch messages", error);
     }
   };
+  
 
   const fetchMatches = async () => {
     if(!userInfo?.id) return;
