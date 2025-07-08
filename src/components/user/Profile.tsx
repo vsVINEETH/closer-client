@@ -321,7 +321,7 @@ const Profile: React.FC = () => {
     if(!userInfo?.id) return;
     
     const response = await handleRequest({
-      url:'/api/user/change_profile_image',
+      url:'/api/user/profile/image/change',
       method:'PATCH',
       data:{
         imageIndex,

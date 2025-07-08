@@ -1,5 +1,5 @@
 'use client'
-import React, { useState} from 'react'
+import React, { useRef, useState} from 'react'
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { successToast } from '@/utils/toasts/toast';
@@ -23,11 +23,13 @@ export default function PasswordForm() {
 
   const [formData, setFormData] = useState<FormData>({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [error, setError] = useState<Errors>({})
-  const {changePassword} = useAuth()
+  const {changePassword} = useAuth();
+  const currentInputRef = useRef<HTMLInputElement| null>(null);
+  const passwordInputRef = useRef<HTMLInputElement| null>(null);
+  const confirmInputRef = useRef<HTMLInputElement| null>(null);
 
   const employeeId = useSelector((state: RootState) => state?.employee.employeeInfo?.id);
   // const employeeInfo = useSelector((state: RootState) => state?.employee.employeeInfo)
-
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -48,6 +50,9 @@ export default function PasswordForm() {
 
       if (response.data) {
         successToast(response.data.message)
+         currentInputRef.current ? currentInputRef.current.value = '' : 0;
+         passwordInputRef.current ? passwordInputRef.current.value = '' : 0;
+         confirmInputRef.current ? confirmInputRef.current.value = '' : 0;
         setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' })
       }
     }
@@ -90,6 +95,7 @@ export default function PasswordForm() {
                 id="current-password"
                 name='currentPassword'
                 type="password"
+                ref={currentInputRef}
                 onChange={handleChange}
                 required
                 className="w-full border rounded-lg py-2 px-4 text-gray-700 dark:text-white bg-gray-100 dark:bg-nightBlack focus:outline-none focus:ring-2 focus:ring-customPink dark:focus:ring-gray-50"
@@ -103,6 +109,7 @@ export default function PasswordForm() {
                 id="new-password"
                 name='newPassword'
                 type="password"
+                ref={passwordInputRef}
                 onChange={handleChange}
                 required
                 className="w-full border rounded-lg py-2 px-4 text-gray-700 dark:text-white bg-gray-100 dark:bg-nightBlack focus:outline-none focus:ring-2 focus:ring-customPink dark:focus:ring-gray-50"
@@ -116,6 +123,7 @@ export default function PasswordForm() {
                 id="confirm-password"
                 name='confirmPassword'
                 type="password"
+                ref={confirmInputRef}
                 onChange={handleChange}
                 required
                 className="w-full border rounded-lg py-2 px-4 text-gray-700 dark:text-white bg-gray-100 dark:bg-nightBlack focus:outline-none focus:ring-2 focus:ring-customPink dark:focus:ring-gray-50"

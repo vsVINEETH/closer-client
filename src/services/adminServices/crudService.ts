@@ -7,7 +7,7 @@ export const useCrudService = () => {
     // Advertisement
     const postAdvertisement = async (advertisementData: FormData, searchFilterSortParams: SearchFilterSortParams ) => {
         return await handleRequest({
-            url: '/api/admin/advertisement',
+            url: '/api/admin/advertisements',
             method:'POST',
             data: advertisementData,
             params:searchFilterSortParams,
@@ -19,7 +19,7 @@ export const useCrudService = () => {
 
     const listAdvertisement = async (advertisementId: string, searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url:'/api/admin/list_advertisement',
+            url:'/api/admin/advertisements/listing',
             method:'PATCH',
             data:{
                 id: advertisementId
@@ -30,7 +30,7 @@ export const useCrudService = () => {
 
     const deleteAdvertisement = async (advertisementId: string, searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url:'/api/admin/advertisement',
+            url:'/api/admin/advertisements',
             method:'DELETE',
             data:{
                 id:advertisementId
@@ -41,7 +41,7 @@ export const useCrudService = () => {
 
     const updateAdvertisement = async (updatedAdvertisementData: AdvertisementData | object, searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url:'/api/admin/advertisement',
+            url:'/api/admin/advertisements',
             method:'PATCH',
             data: updatedAdvertisementData || {},
             params: searchFilterSortParams
@@ -51,7 +51,7 @@ export const useCrudService = () => {
     //Subscription
     const updateSubscription = async (updatedSubscriptionData: SubscriptionData, searchFilterSortParams: SearchFilterSortParams ) => {
         return await handleRequest({
-            url:'/api/admin/update_subscription',
+            url:'/api/admin/subscriptions',
             method:'PATCH',
             data: updatedSubscriptionData,
             params: searchFilterSortParams
@@ -60,7 +60,7 @@ export const useCrudService = () => {
 
     const listSubscription = async (subscriptionId: string, searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url:'/api/admin/list_subscription',
+            url:'/api/admin/subscriptions',
             method:'POST',
             data:{
                 id: subscriptionId
@@ -73,7 +73,7 @@ export const useCrudService = () => {
     //Employees
     const postEmployee = async (employeeData: EmployeeCreateData, searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url:'/api/admin/create_employee',
+            url:'/api/admin/employees',
             method:'POST',
             data: employeeData,
             params: searchFilterSortParams
@@ -82,8 +82,8 @@ export const useCrudService = () => {
 
     const listEmployee = async (employeeId: string, searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url:'/api/admin/block_employee',
-            method:'POST',
+            url:'/api/admin/employees',
+            method:'PATCH',
             data:{
                 id: employeeId
             },
@@ -95,7 +95,7 @@ export const useCrudService = () => {
     //Users
     const listUser = async (userId: string, searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url:'/api/admin/block_user',
+            url:'/api/admin/users',
             method:'POST',
             data:{
                 id:userId
@@ -106,7 +106,7 @@ export const useCrudService = () => {
 
     const restrictUser = async (userId: string, duration: string, searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url:'/api/admin/ban_user',
+            url:'/api/admin/users/ban',
             method:'PATCH',
             data:{
                 id:userId,
@@ -118,7 +118,7 @@ export const useCrudService = () => {
 
     const removeUserRestriction  = async (userId: string, searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url:'/api/admin/unban_user',
+            url:'/api/admin/users/unban',
             method:'PATCH',
             data:{
                 id:userId,

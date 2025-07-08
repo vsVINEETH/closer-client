@@ -28,7 +28,7 @@ const ImageRefreshHandler = () => {
     try {
       if(!user?.id) return;
       const response = await handleRequest({
-        url: "/api/user/profile_imageUrl_update",
+        url: "/api/user/profile/image-urls",
         method: "GET",
         params: { userId: user.id },
       });

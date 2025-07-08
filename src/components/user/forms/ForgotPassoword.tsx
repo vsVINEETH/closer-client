@@ -46,7 +46,7 @@ const ForgotPassword: React.FC = () => {
       if (validation()) {
         localStorage.setItem("email", formData.email);
         const response = await handleRequest({
-          url: "/api/user/forgot_password",
+          url: "/api/user/forgot-password",
           method: "POST",
           data: {
             formData: formData,

@@ -1,4 +1,10 @@
-import React, { useState, createContext, useContext, useEffect } from "react";
+import React, {
+  useState,
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+} from "react";
 import { Socket } from "socket.io-client";
 import { connectSocket, disconnectSocket } from "@/utils/socket";
 import { useSelector } from "react-redux";
@@ -118,7 +124,8 @@ export const SocketContextProvider = ({
     (onlineUser) => onlineUser.userId === user?.id
   );
 
-  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  //const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const localStream = useRef<MediaStream | null>(null);
   const [peer, setPeer] = useState<PeerData | null>(null);
 
   const setVoiceCall = (value: boolean) => {
@@ -132,8 +139,8 @@ export const SocketContextProvider = ({
   };
 
   const getMediaStream = async (faceMode?: string, isAudio?: boolean) => {
-    if (localStream) {
-      return localStream;
+    if (localStream.current) {
+      return localStream.current;
     }
 
     try {
@@ -165,12 +172,14 @@ export const SocketContextProvider = ({
 
       console.log("Stream obtained:", stream);
 
-      setLocalStream(stream);
+      //setLocalStream(stream);
+      localStream.current = stream;
 
       return stream;
     } catch (error) {
       console.error("Failed to get the stream:", error);
-      setLocalStream(null);
+      //setLocalStream(null);
+      localStream.current = null;
       return null;
     }
   };
@@ -241,9 +250,10 @@ export const SocketContextProvider = ({
       });
     }
 
-    if (localStream) {
-      localStream.getTracks().forEach((track) => track.stop());
-      setLocalStream(null);
+    if (localStream.current) {
+      localStream.current.getTracks().forEach((track) => track.stop());
+      // setLocalStream(null);
+      localStream.current = null;
     }
 
     if (data?.isMissed === true) {
@@ -392,7 +402,8 @@ export const SocketContextProvider = ({
       console.error("Could not get stream in handleJoinCall");
       return;
     }
-    setLocalStream(stream);
+    //setLocalStream(stream);
+    localStream.current = stream;
 
     // Create peer as non-initiator for answering
     const newPeer = await createPeer(stream, false);
@@ -450,7 +461,7 @@ export const SocketContextProvider = ({
     console.log("Received signal:", data);
 
     try {
-      if (!localStream) {
+      if (!localStream.current) {
         console.warn("Local stream is missing, waiting for it...");
         return;
       }
@@ -478,7 +489,7 @@ export const SocketContextProvider = ({
       // Create new peer if we don't have one
       if (!peer?.peerConnection) {
         console.log("Creating new peer in completePeerConnection");
-        const newPeer = await createPeer(localStream, false);
+        const newPeer = await createPeer(localStream.current, false);
         setPeer({
           peerConnection: newPeer,
           participantUser: data.ongoingCall.participants.receiver,
@@ -705,7 +716,7 @@ export const SocketContextProvider = ({
       value={{
         onlineUsers,
         ongoingCall,
-        localStream,
+        localStream: localStream.current,
         peer,
         handleCall,
         handleJoinCall,

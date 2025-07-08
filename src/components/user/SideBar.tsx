@@ -332,12 +332,21 @@ const SideBar: React.FC = () => {
           <p className="p-4 text-gray-600">No notifications yet.</p>
         );
         case "messages":
+          const sortedMessages = [...messages].sort((a, b) => {
+            const lastA = a.messages.messages[a.messages.messages.length - 1];
+            const lastB = b.messages.messages[b.messages.messages.length - 1];
+            const dateA = lastA ? new Date(lastA.createdAt).getTime() : 0;
+            const dateB = lastB ? new Date(lastB.createdAt).getTime() : 0;
+            return dateB - dateA; // Sort descending
+          });
+          // console.log(messages,'opo')
+         console.log(sortedMessages,'lop')
           return messages ? (
             <div className="p-4 space-y-4">
             <AnimatePresence>
-              {matches?.length > 0 ? (
-                matches?.map((match) => {
-                  const relevantMessages = messages.filter(
+              {[...matches]?.length > 0 ? (
+                [...matches]?.map((match) => {
+                  const relevantMessages = sortedMessages.filter(
                     (val) =>
                       val.pair === `${match?._id}-${userInfo?.id}` ||
                       val.pair === `${userInfo?.id}-${match?._id}`
@@ -349,7 +358,7 @@ const SideBar: React.FC = () => {
                       : null;
       
                   const lastMessage = latestMessage ? latestMessage?.messages?.messages : null;
-      
+                  
                   return (
                     <motion.div
                       key={match?._id}

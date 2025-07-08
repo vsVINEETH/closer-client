@@ -13,7 +13,7 @@ export const useFetch = () => {
             deleteProfileImage,fetchNotifications, fetchMatches,
             fetchMessages, showInterestOnUser,unmatchUserFromList,
             fetchSubscriptionData,fetchSubscriptionPlanData,fetchEventData,
-            fetchChat, postAudio, fetchWalletData
+            fetchChat, postAudio, fetchWalletData,fetchUserLocation
             
         } = useFetchService();
 
@@ -248,6 +248,16 @@ export const useFetch = () => {
         }
         setLoading(false);
         return response; 
+    };
+
+    const getUserLocation = async (latitude: number, longitude: number) => {
+        setLoading(true);
+        const response = await fetchUserLocation(latitude, longitude);
+        if(response.error){
+            setError(response.error)
+        };
+        setLoading(false);
+        return response;
     }
 
     return {isLoading, error, getUsersData, getAdvertisementData,
@@ -257,6 +267,6 @@ export const useFetch = () => {
            updateProfilePicture, getNotifications, getMessages,
            getMatches,interestOnUser, unmatchUser, getSubscriptionData,
            getSubscriptionPlanData, getEventData, getChats, sendAudio, 
-           getWalletData
+           getWalletData, getUserLocation
         }
 }

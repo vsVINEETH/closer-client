@@ -5,7 +5,7 @@ export const useCrudService = () => {
 
     const postContent = async (contentData: FormData, searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url: '/api/employee/create_content',
+            url: '/api/employee/contents',
             method:'POST',
             data: contentData,
             headers:{
@@ -17,7 +17,7 @@ export const useCrudService = () => {
 
     const listContent = async (contentId: string, searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url:'/api/employee/list_content',
+            url:'/api/employee/contents/listing',
             method:'POST',
             data:{
                 id: contentId
@@ -28,7 +28,7 @@ export const useCrudService = () => {
 
     const deleteContent = async (contentId: string, searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url:'/api/employee/delete_content',
+            url:'/api/employee/contents',
             method:'DELETE',
             data:{
                 id:contentId
@@ -39,7 +39,7 @@ export const useCrudService = () => {
 
     const updateContent = async (updatedContentData: ContentData, searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url:'/api/employee/update_content',
+            url:'/api/employee/contents',
             method:'PATCH',
             data: updatedContentData,
             params: searchFilterSortParams 
@@ -49,7 +49,7 @@ export const useCrudService = () => {
 
     const postCategory = async (categoryData: CategoryCreateData, searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url:'/api/employee/create_category',
+            url:'/api/employee/categories',
             method:'POST',
             data: categoryData,
             params: searchFilterSortParams 
@@ -58,7 +58,7 @@ export const useCrudService = () => {
 
     const listCategory = async (categoryId: string, searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url:'/api/employee/list_category',
+            url:'/api/employee/categories/listing',
             method:'POST',
             data:{
                 id: categoryId
@@ -69,7 +69,7 @@ export const useCrudService = () => {
 
     const updateCategory = async (updatedCategoryData: CategoryData, searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url:'/api/employee/update_category',
+            url:'/api/employee/categories',
             method:'PUT',
             data: updatedCategoryData,
             params: searchFilterSortParams 

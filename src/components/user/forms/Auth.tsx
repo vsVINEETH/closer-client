@@ -38,15 +38,20 @@ const Auth: React.FC = () => {
   };
 
   return (
-    <div className="border shadow-md rounded-md w-auto h-7 flex justify-center">
-      <div className="cursor-pointer" onClick={() => signIn("google")}>
+    // <div className="border shadow-md rounded-md w-auto h-7 flex justify-center">
+      <div className="cursor-pointer border shadow-md rounded-md w-auto h-7 flex justify-center" onClick={() => signIn("google")}>
         <FcGoogle className="w-6 h-6" />
-      </div>
-      <span className="ml-2 text-darkGray dark:text-lightGray">
+              <span className="ml-2 text-darkGray dark:text-lightGray">
         {" "}
         {t('auth')}
         
       </span>
+      {/* </div> */}
+      {/* <span className="ml-2 text-darkGray dark:text-lightGray">
+        {" "}
+        {t('auth')}
+        
+      </span> */}
       {/* <div className='cursor-pointer' onClick={() => signIn('github')}>
                 <AiFillGithub className='bg-slate-50 w-6 h-6 dark:text-white dark:bg-darkGray' />
             </div> */}

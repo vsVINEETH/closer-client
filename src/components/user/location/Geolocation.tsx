@@ -4,22 +4,26 @@ import useAxios from "@/hooks/axiosHooks/useAxios";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { errorToast, infoToast } from "@/utils/toasts/toast";
-import axios from "axios";
+import { useFetch } from "@/hooks/fetchHooks/useUserFetch";
 
 interface Props {
   onLocationFetched?: (success: boolean) => void;
 }
 
 const LocationFetcher: React.FC<Props> = ({ onLocationFetched }) => {
-const hasShownToast = useRef(false);
-
+  const hasShownToast = useRef(false);
+  const hasFetched = useRef(false);
   const {handleRequest} = useAxios();
+  const {getUserLocation} = useFetch()
 
   const userId = useSelector((state: RootState) => state.user?.userInfo?.id)
 
-  // if(!userId){ return };
+
   useEffect(() => {
 
+    if(!userId){ return };
+    if (hasFetched.current) return;
+    hasFetched.current = true;
 
     const savedLocation = localStorage.getItem("userLocation");
 
@@ -32,32 +36,17 @@ const hasShownToast = useRef(false);
       errorToast('Geolocation is not supported by this browser');
       onLocationFetched?.(false);
       return;
-    }
+    };
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
+        
         try {
-          const response = await axios({
-            url: `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
-            method: 'GET',
-            withCredentials: false
-          });
-         
-          const address = response.data.address;
-          const formattedLocation = {
-            latitude,
-            longitude,
-            city: address.city || address.town || address.village || "Unknown",
-            state: address.state || "Unknown",
-            country: address.country || "Unknown",
-          };
+          const response = await getUserLocation(latitude, longitude);
+          localStorage.setItem("userLocation", JSON.stringify(response.data));
 
-    
-
-          localStorage.setItem("userLocation", JSON.stringify(formattedLocation));
-
-          await sendLocationToBackend(formattedLocation);
+          await sendLocationToBackend(response.data);
           onLocationFetched?.(true);
         } catch (err) {
           console.error(err)
@@ -74,12 +63,13 @@ const hasShownToast = useRef(false);
         console.error(err)
       }
     );
-  }, []);
+  }, [userId]);
+  
 
   const sendLocationToBackend = async (locationData: any) => {
     try {
       const response = await handleRequest({
-        url:'/api/user/update_location',
+        url:'/api/user/location',
         method:'POST',
         data: {locationData, userId },
       })
@@ -88,7 +78,6 @@ const hasShownToast = useRef(false);
         errorToast('falied to save location')
       }
       if(response.data){
-        
         console.log("Location saved to DB");
       }
     } catch (error) {

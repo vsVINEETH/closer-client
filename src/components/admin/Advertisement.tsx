@@ -496,7 +496,7 @@ const AdvertisementTable: React.FC = () => {
         {/* table */}
 
       {advertisementData.length || result.length ? (
-        <>
+      
         <DataTable 
           columns={columns} 
           data={result} 
@@ -511,101 +511,7 @@ const AdvertisementTable: React.FC = () => {
           handlePrevious={handlePrevious}
           />
       
-        {/* <div className="p-6 px-0 overflow-x-auto">
-          <table className="w-full mt-4 text-left border-collapse rounded-lg shadow-md overflow-hidden">
-            <thead className="bg-gray-100 dark:bg-darkGray text-gray-800 dark:text-gray-300 text-sm  tracking-wider">
-              <tr>
-                {["ID", "Title", "Subtitle", "Details", "Images", "Status", "Created At", "Action"].map((header, index) => (
-                  <th
-                    key={index}
-                    className="p-4 border-b border-gray-300 dark:border-gray-700 text-center cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
-                    onClick={() =>
-                      header !== "Images" && header !== "Status" && header !== "Action"
-                        ? handleSort(columnMap[header])
-                        : null
-                    }
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      {header}
-                      {["ID", "Title", "Subtitle", "Details", "Created At"].includes(header) && <ChevronsUpDown size={14} />}
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-
-            <tbody className="text-gray-800  dark:text-gray-200 text-sm">
-              {result?.map((value: any, index: number) => (
-                <tr key={index} className="border-b border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-darkGray transition-all">
-                  <td className="p-4 text-center font-medium">{value.id.slice(7, 16)}</td>
-                  <td className="p-4 text-center truncate max-w-[150px]">{value.title}</td>
-                  <td className="p-4 text-center truncate max-w-[150px]">{value.subtitle}</td>
-                  <td className="p-4 text-center truncate max-w-[200px]">{value.content}</td>
-                  <td className="p-4 text-center">
-                    <img src={value.image} alt="" className="w-12 h-12 rounded-lg shadow-md object-cover" />
-                  </td>
-                  <td className="p-4 text-center">
-                    <span
-                      className={`px-3 py-1 text-xs font-semibold rounded-md uppercase ${
-                        value.isListed
-                          ? "bg-green-500/20 text-green-600 dark:bg-green-400/20 dark:text-green-300"
-                          : "bg-red-500/20 text-red-600 dark:bg-red-400/20 dark:text-red-300"
-                      }`}
-                    >
-                      {value.isListed ? "Listed" : "Unlisted"}
-                    </span>
-                  </td>
-                  <td className="p-4 text-center">{value.createdAt}</td>
-                  <td className="p-4 flex justify-center gap-3">
-                    <button
-                      className="px-4 py-1.5 text-xs font-semibold uppercase border rounded-lg transition-all dark:border-gray-500 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                      onClick={() => handleListing(value.id, index)}
-                    >
-                      {value.isListed ? "Unlist" : "List"}
-                    </button>
-
-                    <button
-                      className="px-4 py-1.5 text-xs font-semibold uppercase border rounded-lg transition-all bg-red-500/20 text-red-600 dark:bg-red-400/2 dark:text-red-400 hover:bg-red-500/30 dark:hover:bg-red-500/40"
-                      onClick={() => handleDelete(value.id)}
-                    >
-                      Delete
-                    </button>
-
-                    <button
-                      className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
-                      onClick={() => handleEditClick(value)}
-                    >
-                      <Pencil size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div> */}
-
-        {/* <div className="flex items-center justify-between p-4  border-blue-gray-50">
-            <p className="text-sm">
-                Page {currentPage} of {Math.ceil(totalPage / pageSize)}
-            </p>
-            <div className="flex gap-2">
-                <button 
-                    onClick={handlePrevious} 
-                    disabled={currentPage === 1}
-                    className="select-none rounded-lg border dark:border-gray-50 dark:text-gray-50  border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-                    >
-                    Previous
-                </button>
-                <button
-                    onClick={handleNext}
-                    disabled={currentPage >= Math.ceil(totalPage / pageSize)}
-                    className="select-none rounded-lg border dark:border-gray-50 dark:text-gray-50 border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-                    >  
-                    Next
-                </button>
-            </div>
-       </div> */}
-       </>
+   
         ): <NoContent message='No advertisements available'/>}
 
 

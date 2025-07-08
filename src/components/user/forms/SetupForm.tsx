@@ -51,7 +51,7 @@ const SetupForm: React.FC = () => {
   const toggleModal = () => setIsModalOpen((prev) => !prev);
 
 
-  const {setupAccount} = useUserInteractions()
+  const {setupAccount} = useUserInteractions();
   const dispatch = useDispatch();
   const router = useRouter();
 

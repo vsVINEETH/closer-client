@@ -6,7 +6,7 @@ export const useFetchService = () => {
 
     const fetchUsersData = async (userPreferences: PreferenceData) => {
         return await handleRequest({
-            url: "/api/user/users_data",
+            url: "/api/user/users",
             method: "GET",
             params: userPreferences
         });
@@ -22,7 +22,7 @@ export const useFetchService = () => {
 
     const fetchBlogData = async (searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url: '/api/employee/content_data',
+            url: '/api/employee/contents',
             method: 'GET', 
             params: searchFilterSortParams 
         })
@@ -31,7 +31,7 @@ export const useFetchService = () => {
 
     const fetchBlogDetails = async (blogId: string) => {
         return await handleRequest({
-            url: '/api/user/content_detail',
+            url: '/api/user/contents/detail',
             method: 'GET',
             params: {
                 id: blogId
@@ -49,7 +49,7 @@ export const useFetchService = () => {
 
     const fetchBlockedUserData = async (userId: string) => {
         return await handleRequest({
-            url: '/api/user/block_list',
+            url: '/api/user/users/blocked',
             method: 'GET',
             params: {
               id: userId,
@@ -59,7 +59,7 @@ export const useFetchService = () => {
 
     const fetchBookedEventData = async (userId: string) => {
         return await handleRequest({
-            url: '/api/user/booked_events',
+            url: '/api/user/events/booked',
             method: 'GET',
             params: {
               userId: userId,
@@ -82,7 +82,7 @@ export const useFetchService = () => {
 
     const updateProfile = async (userId: string, filed: string, value: string ) => {
         return await handleRequest({
-            url:'/api/user/update_profile',
+            url:'/api/user/profile',
             method:'PATCH',
             data:{
               field: filed,
@@ -96,7 +96,7 @@ export const useFetchService = () => {
 
     const deleteProfileImage = async (userId: string, imageURLSource: string) => {
         return await handleRequest({
-            url:'/api/user/profile_image',
+            url:'/api/user/profile/image',
             method:'DELETE',
             data:{
               id: userId,
@@ -107,7 +107,7 @@ export const useFetchService = () => {
 
     const addProfileImage = async (userId: string, imageData: FormData) => {
         return await handleRequest({
-            url:'/api/user/profile_image',
+            url:'/api/user/profile/image',
             method:'PATCH',
             data: imageData,
             headers: {
@@ -132,7 +132,7 @@ export const useFetchService = () => {
 
     const fetchMessages = async (userId: string) => {
         return await handleRequest({
-            url: "/api/user/messages",
+            url: "/api/user/chats/messages",
             method: "GET",
             params: {
               id: userId,
@@ -153,7 +153,7 @@ export const useFetchService = () => {
 
     const showInterestOnUser = async (notificationId: string, userId: string, interactorId: string, status: boolean) => {
         return await handleRequest({
-            url: "/api/user/interest_request",
+            url: "/api/user/interests",
             method: "POST",
             data: {
               id: notificationId,
@@ -166,7 +166,7 @@ export const useFetchService = () => {
 
     const unmatchUserFromList = async (userId: string, interactorId: string) => {
         return await handleRequest({
-            url:"/api/user/unmatch",
+            url:"/api/user/matches/unmatch",
             method:'PATCH',
             data:{
               userId: userId,
@@ -177,14 +177,14 @@ export const useFetchService = () => {
 
     const fetchSubscriptionData = async () => {
         return await handleRequest({
-            url: '/api/user/subscription',
+            url: '/api/user/subscriptions',
             method: 'GET', 
         })
     };
 
     const fetchSubscriptionPlanData = async (planId: string) => {
         return await handleRequest({
-            url:'/api/user/selected_subscription',
+            url:'/api/user/subscriptions/selected',
             method:'GET',
             params:{
                 planId
@@ -194,7 +194,7 @@ export const useFetchService = () => {
 
     const fetchEventData = async (eventId: string) => {
         return await handleRequest({
-            url: '/api/user/event',
+            url: '/api/user/events',
             method: 'GET',
             params: { id: eventId }
         })
@@ -213,10 +213,17 @@ export const useFetchService = () => {
 
     const postAudio = async (audioData: FormData) => {
         return await handleRequest({
-            url: '/api/user/upload_audio',
+            url: '/api/user/chats/audio',
             method: 'POST',
             data: audioData,
         })
+    };
+
+    const fetchUserLocation = async (latitude: number, longitude: number) => {
+        return await handleRequest({
+            url:`/api/user/location?latitude=${latitude}&longitude=${longitude}`,
+            method:'GET',
+        });
     };
 
 
@@ -228,6 +235,6 @@ export const useFetchService = () => {
             addProfileImage, fetchNotifications, fetchMessages,
             fetchMatches, showInterestOnUser, unmatchUserFromList,
             fetchSubscriptionData, fetchSubscriptionPlanData, fetchEventData,
-            fetchChat, postAudio, fetchWalletData
+            fetchChat, postAudio, fetchWalletData, fetchUserLocation
         };
 }

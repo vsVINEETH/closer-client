@@ -14,7 +14,7 @@ export const useFetchService = () => {
 
     const fetchContenData = async (searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url:'/api/employee/content_data',
+            url:'/api/employee/contents',
             method:'GET', 
             params: searchFilterSortParams
         })
@@ -22,7 +22,7 @@ export const useFetchService = () => {
 
     const fetchCategoryData = async (searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url:'/api/employee/category_data',
+            url:'/api/employee/categories',
             method:'GET',
             params:searchFilterSortParams
         })
