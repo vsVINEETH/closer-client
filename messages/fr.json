@@ -54,7 +54,54 @@
   "matches": "Correspondances",
   "messages": "Messages",
   "notifications": "Notifications"
+},
+
+  "Dropdown": {
+    "wallet": "Portefeuille",
+    "security": "Sécurité",
+    "blockedUsers": "Utilisateurs bloqués",
+    "bookedEvent": "Événements confirmés",
+    "logout": "Déconnexion"
+  },
+
+    "TableHeadline": {
+      "events": "Événements à venir pour vous",
+      "blogs": "Améliorez vos relations",
+      "blockedUsers": "Utilisateurs bloqués",
+      "confirmedEvents": "Événements confirmés"
+    },
+  
+    "Prosidebar": {
+      "primeDiscovery": "Prime Discovery",
+      "description": "Les préférences vous montrent des personnes qui correspondent à votre style, mais ne limitent pas celles que vous pouvez voir – vous pourrez toujours matcher avec des personnes en dehors de vos sélections",
+      "agePreference": "Préférence d'âge",
+      "distancePreference": "Préférence de distance",
+      "interestedIn": "Intéressé par",
+      "selectAnOption": "Sélectionnez une option",
+      "female": "Femme",
+      "male": "Homme",
+      "other": "Autre",
+      "lookingFor": "À la recherche de",
+      "findNewFriends": "Trouver de nouveaux amis",
+      "shortTerm": "Relation à court terme",
+      "longTerm": "Relation à long terme",
+      "stillFigure": "Toujours en réflexion",
+      "username": "Nom d'utilisateur",
+      "phone": "Téléphone",
+      "dob": "Date de naissance",
+      "yourGallery": "Votre galerie"
+    },
+  
+    "PaginationFilter": {
+      "previous": "Précédent",
+      "page": "Page",
+      "of": "de",
+      "next": "Suivant",
+      "newest": "Le plus récent",
+      "oldest": "Le plus ancien"
+    }
+  
+  
 }
 
-  }
   

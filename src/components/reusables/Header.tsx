@@ -58,7 +58,7 @@ const Header: React.FC<HeaderProps> = ({ htmlFor }) => {
       )}
 
       {/* Mobile Menu Button */}
-     {htmlFor === 'user' &&
+     {isAuthenticated && htmlFor === 'user' &&
       <button
         onClick={() => setMenuOpen(!menuOpen)}
         className="md:hidden text-white text-2xl focus:outline-none"

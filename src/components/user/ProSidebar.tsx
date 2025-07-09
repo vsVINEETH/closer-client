@@ -6,7 +6,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store";
 import { updatePreferences } from "@/store/slices/userSlice";
 import { Crown } from "lucide-react";
-
+import { useTranslations } from "next-intl";
 
 const ProSidebar: React.FC = () => {
   const userPreference = useSelector((state: RootState) => state.user.userInfo);
@@ -18,7 +18,7 @@ const ProSidebar: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [screenWidth, setScreenWidth] = useState<number>(window.innerWidth);
   const dispatch = useDispatch()
-
+  const t = useTranslations('Prosidebar')
   const prime = useSelector((state: RootState) => state.user.userInfo?.prime);
 
   useEffect(() => {
@@ -109,12 +109,10 @@ const ProSidebar: React.FC = () => {
           <div className="space-y-4">
             
             <h2 className="text-md font-semibold text-gray-700 dark:text-gray-300">
-              Prime Discovery 
+              {t('primeDiscovery')}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Preferences show you people who match your vibe, but won&apos;t limit
-              who you see - you will still be able to match with people outside
-              your selections.
+              {t('description')}
             </p>
 
             {/* Age Preference */}
@@ -124,7 +122,7 @@ const ProSidebar: React.FC = () => {
               <Crown size={25} className="text-customPink"/>
               }
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Age Preference 
+                {t('agePreference')} 
               </label>
               
               <div className="flex items-center justify-between mt-1">
@@ -160,7 +158,7 @@ const ProSidebar: React.FC = () => {
             {/* Distance Preference */}
             <div>
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Distance Preference
+                {t('distancePreference')} 
               </label>
               <input
                 disabled={prime?.isPrime === false}
@@ -179,35 +177,35 @@ const ProSidebar: React.FC = () => {
             {/* Other Preferences */}
              <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Interested In
+                  {t('interestedIn')} 
                 </label>
                 <select className="w-full mt-1 py-2 text-sm border-gray-300 dark:border-gray-700 dark:bg-darkGray dark:text-gray-300 rounded-md"
                 value={interestedIn}
                 onChange={(e) => setInterestedIn(e.target.value)}
                 disabled={prime?.isPrime === false}
                 >
-                <option value="">Select an option</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="others">Others</option>
+                <option value=""> {t('selectAnOption')}</option>
+                <option value="male"> {t('male')} </option>
+                <option value="female"> {t('female')} </option>
+                <option value="others"> {t('others')} </option>
                 </select>
               </div>
 
 
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Looking for
+                  {t('lookingFor')} 
                 </label>
                 <select className="w-full text-sm mt-1 py-2 border-gray-300 dark:border-gray-700 dark:bg-darkGray dark:text-gray-300 rounded-md"
                 value={lookingFor}
                 onChange={(e) => setLookingFor(e.target.value)}
                 disabled={prime?.isPrime === false}
                 >
-                <option value="">Select an option</option>
-                <option value="short-term">Short-term relationship</option>
-                <option value="long-term">Long-term relationship</option>
-                <option value="friends">Find new friends</option>
-                <option value="figuring-out">Still figuring out</option>
+                <option value=""> {t('selectAnOption')}</option>
+                <option value="short-term"> {t('shortTerm')}</option>
+                <option value="long-term"> {t('longTerm')}</option>
+                <option value="friends"> {t('findNewFriends')}</option>
+                <option value="figuring-out"> {t('stillFigure')}</option>
                 </select>
               </div>
 

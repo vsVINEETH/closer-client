@@ -519,8 +519,6 @@ const ContentTable: React.FC = () => {
         </div>
 
         {contentData.length || result.length ?(
-            <>
-
             <DataTable 
             columns={columns} 
             data={result} 
@@ -535,133 +533,6 @@ const ContentTable: React.FC = () => {
             handlePrevious={handlePrevious}
             />
          
-            {/* <div className="p-6 overflow-x-auto max-w-full">
-            <table className="w-full mt-4 text-left border-collapse min-w-max rounded-lg shadow-md overflow-hidden  table-auto">
-                
-                <thead className="text-center bg-gray-100 dark:bg-darkGray ">
-                <tr className="text-gray-700 dark:text-gray-300 text-sm">
-                    {[ "ID","Title","Subtitle","Content","Category","Images", "Status","Created At","Action",].map((header, index) => (
-                    <th key={index} className="p-4 border-b border-gray-300 dark:border-gray-700 cursor-pointer dark:hover:bg-gray-500 transition-colors"
-                    onClick={() =>  header !== 'Action' ? handleSort(columnMap[header]) : null}>
-                
-                    <div className="flex items-center justify-center gap-2">
-                        {header}
-                        {["ID","Title","Subtitle", "Content","Category","Created At"].includes(header) && <ChevronsUpDown size={14} />}
-                    </div> 
-                    
-                    </th>
-                    ))}
-                </tr>
-                </thead>
-
-              
-                <tbody className="text-gray-800 dark:text-gray-200 text-sm">
-                {result?.map((value, index) => (
-                    <tr key={index} className="hover:bg-gray-100 dark:hover:bg-darkGray transition-all">
-             
-                    <td className="p-4 border-b border-gray-300 dark:border-gray-700 whitespace-nowrap">
-                        <p className="font-medium">{value.id.slice(7, 16)}</p>
-                    </td>
-
-       
-                    <td className="p-4 border-b border-gray-300 dark:border-gray-700 max-w-[150px] whitespace-nowrap overflow-hidden text-ellipsis">
-                        <p className="truncate">{value.title}</p>
-                    </td>
-
-           
-                    <td className="p-4 border-b border-gray-300 dark:border-gray-700 max-w-[150px] whitespace-nowrap overflow-hidden text-ellipsis">
-                        <p className="truncate">{value.subtitle}</p>
-                    </td>
-
-                    <td className="p-4 border-b border-gray-300 dark:border-gray-700 max-w-[200px] whitespace-nowrap overflow-hidden text-ellipsis">
-                        <p className="truncate">{value.content}</p>
-                    </td>
-
-    
-                    <td className="p-4 border-b border-gray-300 dark:border-gray-700">
-                        <p>{value.category.name}</p>
-                    </td>
-
-     
-                    <td className="p-4 border-b border-gray-300 dark:border-gray-700">
-                        <img src={value.image} alt="" className='w-12 h-12 object-cover rounded-md'/>
-                    </td>
-
-
-                    <td className="p-4 border-b border-gray-300 dark:border-gray-700">
-                        <span
-                        className={`px-3 py-1 text-xs font-bold rounded-md uppercase ${
-                            value.isListed
-                            ? "bg-green-500/20 text-green-300 dark:bg-green-300/2 "
-                            : "bg-red-500/20 text-red-600 dark:bg-red-300/2 dark:text-red-400"
-                        }`}
-                        >
-                        {value.isListed ? "Listed" : "Unlisted"}
-                        </span>
-                    </td>
-
-           
-                    <td className="p-4 border-b border-gray-300 dark:border-gray-700 whitespace-nowrap">
-                        <p>{value.createdAt}</p>
-                    </td>
-
-               
-                    <td className="p-4 border-b border-gray-300 dark:border-gray-700">
-                        <div className="flex items-center gap-3">
-                  
-                        <button
-                            className="px-4 py-1.5 text-xs font-semibold uppercase border rounded-lg transition-all dark:border-gray-50 dark:bg-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                            onClick={() => handleListing(value.id, index)}
-                        >
-                            {value.isListed ? "Unlist" : "List"}
-                        </button>
-
-                       
-                        <button
-                            className="px-4 py-1.5 text-xs font-semibold uppercase border rounded-lg transition-all bg-red-500/20 text-red-600 dark:bg-red-400/2 dark:text-red-400 hover:bg-red-500/30 dark:hover:bg-red-500/40"
-                            onClick={() => handleDelete(value.id)}
-                        >
-                            Delete
-                        </button>
-
-            
-                        <button
-                            className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
-                            onClick={() => handleEditClick(value)}
-                        >
-                            <Pencil size={18} />
-                        </button>
-                        </div>
-                    </td>
-                    </tr>
-                ))}
-                </tbody>
-            </table>
-            </div> */}
-
-            {/* bottom */}
-            {/* <div className="flex items-center justify-between p-4  border-blue-gray-50 ">
-                <p className="text-sm">
-                    Page {currentPage} of {Math.ceil(totalPage / pageSize)}
-                </p>
-                <div className="flex gap-2 ">
-                    <button 
-                        onClick={handlePrevious} 
-                        disabled={currentPage === 1}
-                        className="select-none  dark:text-gray-50  rounded-lg border border-gray-900 dark:border-gray-50 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-                        >
-                        Previous
-                    </button>
-                    <button
-                        onClick={handleNext}
-                        disabled={currentPage >= Math.ceil(totalPage / pageSize)}
-                        className="select-none rounded-lg border dark:text-gray-50  border-gray-900 dark:border-gray-50 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-                        >  
-                        Next
-                    </button>
-                </div>
-           </div> */}
-            </>
         ): <NoContent />}
 
         {/* modalCreate */}
@@ -979,4 +850,4 @@ const ContentTable: React.FC = () => {
   )
 }
 
-export default ContentTable
+export default ContentTable;

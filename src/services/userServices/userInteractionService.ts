@@ -8,7 +8,7 @@ export const useUserInteractionService = () => {
 
     const controllBlogVoting = async (userId: string, blogId: string, voteType: string) => {
         return await handleRequest({
-            url: '/api/user/content_vote',
+            url: '/api/user/contents/vote',
             method: 'PATCH',
             data: {
                 id: userId,
@@ -20,7 +20,7 @@ export const useUserInteractionService = () => {
 
     const controllBlogSharing = async (userId: string, blogId: string) => {
         return await handleRequest({
-            url: '/api/user/content_share',
+            url: '/api/user/contents/share',
             method: 'PATCH',
             data: {
                 id: userId,
@@ -43,7 +43,7 @@ export const useUserInteractionService = () => {
     //payment
     const walletSubscriptionPayment = async (subscriptionPaymentData: SubscriptionPaymentWalletData) => {
         return await handleRequest({
-            url:'/api/user/wallet_payment',
+            url:'/api/user/wallet/pay',
             method:'POST',
             data:subscriptionPaymentData
         })
@@ -51,7 +51,7 @@ export const useUserInteractionService = () => {
 
     const createOrderSubscriptionPayment = async (subscriptionPaymentData: SubscriptionPaymentData) => {
         return await handleRequest({
-            url:'/api/user/create_order',
+            url:'/api/user/subscriptions/order',
             method:'POST',
             data:subscriptionPaymentData
         })
@@ -59,7 +59,7 @@ export const useUserInteractionService = () => {
 
     const verifySubscriptionPayment = async (razorpaySubscriptionPaymentData: RazorpaySubscriptionPaymentData) => {
         return await handleRequest({
-            url:'/api/user/verify_payment',
+            url:'/api/user/subscriptions/verify',
             method:'POST',
             data: razorpaySubscriptionPaymentData
         })
@@ -67,7 +67,7 @@ export const useUserInteractionService = () => {
 
     const abortSubscriptionPayment = async (userId: string) => {
         return await handleRequest({
-            url:'/api/user/abort_payment',
+            url:'/api/user/subscriptions/abort',
             method:'PUT',
             data:{
               userId: userId
@@ -78,7 +78,7 @@ export const useUserInteractionService = () => {
 
     const walletEventPayment = async (eventBookingData: EventBookingData) => {
         return await handleRequest({
-            url: '/api/user/wallet_payment',
+            url: '/api/user/wallet/pay',
             method: 'POST',
             data: eventBookingData
         })
@@ -86,7 +86,7 @@ export const useUserInteractionService = () => {
 
     const createOrderEventPayment = async (eventPaymentData: EventPaymentData) => {
         return await handleRequest({
-            url: '/api/user/book_order',
+            url: '/api/user/events/book-order',
             method: 'POST',
             data: eventPaymentData
         })
@@ -94,7 +94,7 @@ export const useUserInteractionService = () => {
 
     const verifyEventPayment = async (razorpayEventPaymentData:RazorpayEventPaymentData) => {
         return await handleRequest({
-            url: '/api/user/verify_book_payment',
+            url: '/api/user/events/verify-book-payment',
             method: 'POST',
             data: razorpayEventPaymentData
         })
@@ -102,7 +102,7 @@ export const useUserInteractionService = () => {
 
     const abortEventPayment = async (userId: string) => {
         return await handleRequest({
-            url:'/api/user/abort_book_payment',
+            url:'/api/user/events/abort-book-payment',
             method:'PUT',
             data:{
                 userId: userId
@@ -112,7 +112,7 @@ export const useUserInteractionService = () => {
 
     const addMoneyToWallet = async (amount: number, currency: string) => {
         return await handleRequest({
-            url:'/api/user//wallet_create_order',
+            url:'/api/user/wallet/order',
             method:'POST',
             data:{
               currency:currency,
@@ -123,7 +123,7 @@ export const useUserInteractionService = () => {
 
     const verifyWalletPayment = async (razorpayWalletPaymentData: RazorpayWalletPaymentData) => {
         return await handleRequest({
-            url:'/api/user/wallet_verify_payment',
+            url:'/api/user/wallet/verify',
             method:'POST',
             data: razorpayWalletPaymentData
         })

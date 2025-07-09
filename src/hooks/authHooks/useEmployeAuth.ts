@@ -21,6 +21,7 @@ export const useAuth = () => {
         const response = await login(loginCredentials);
         if (response.error) {
           setError(response.error);
+          errorToast('Invalid credentials');
         }
         if(response.data){
             const employee = response.data.employee;

@@ -14,7 +14,7 @@ const login = async (loginCredentials: LoginCrendentialsType) => {
 
 const updatePassword = async (employeeId: string, updatedPasswordData: ChangePasswordData) => {
     return await handleRequest({
-        url: '/api/employee/change_password',
+        url: '/api/employee/change-password',
         method: 'POST',
         data: {
           id: employeeId,

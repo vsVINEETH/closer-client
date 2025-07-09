@@ -3,6 +3,7 @@ import React, {
   createContext,
   useContext,
   useEffect,
+  useRef,
 } from "react";
 import { Socket } from "socket.io-client";
 import { connectSocket, disconnectSocket } from "@/utils/socket";
@@ -19,17 +20,31 @@ interface iSocketContext {
   peer: PeerData | null;
   handleCall: (user: SocketUser, isAudio: boolean) => void;
   handleJoinCall: (ongoingCall: OngoingCall) => void;
-  handleHangup: (data: { ongoingCall?: OngoingCall, isEmitHangUp?: boolean, isMissed?: boolean}) => void;
+  handleHangup: (data: {
+    ongoingCall?: OngoingCall;
+    isEmitHangUp?: boolean;
+    isMissed?: boolean;
+  }) => void;
   isCallEnded: boolean;
   isVoiceCall: boolean;
   setVoiceCall: (value: boolean) => void;
   socket: Socket | null;
   logoutUser: (userId: string) => void;
-  receivedMessage: Chats | undefined,
+  receivedMessage: Chats | undefined;
   checkOnlineStatus: (oppositeUserId: string) => void;
-  handleStatus : (oppositeUserId: string | null) => void;
+  handleStatus: (oppositeUserId: string | null) => void;
   oppositeUserIsOnline: boolean;
-  callLogHandler: (ongoingCall: OngoingCall | null, participants?:{caller?: string, receiver?: string, callType?: string, callDuration?: number, type?:string, isMissed?: boolean} | null) =>  void;
+  callLogHandler: (
+    ongoingCall: OngoingCall | null,
+    participants?: {
+      caller?: string;
+      receiver?: string;
+      callType?: string;
+      callDuration?: number;
+      type?: string;
+      isMissed?: boolean;
+    } | null
+  ) => void;
 }
 
 export type SocketUser = {
@@ -60,32 +75,35 @@ type PeerData = {
 };
 
 interface Chats {
-  _id?: string,
-  sender: string,
+  _id?: string;
+  sender: string;
   senderProfile?: {
-    _id: string,
-    username: string,
-    image: string[],
-  }
+    _id: string;
+    username: string;
+    image: string[];
+  };
   receiver: {
-    _id: string,
-    username: string,
-    image: string,
-  },
-  message: string,
-  type: string,
-  callType: string,
-  callDuration: number,
-  isMissed: boolean,
-  isRead: boolean,
-  status: string,
-  createdAt: string,
+    _id: string;
+    username: string;
+    image: string;
+  };
+  message: string;
+  type: string;
+  callType: string;
+  callDuration: number;
+  isMissed: boolean;
+  isRead: boolean;
+  status: string;
+  createdAt: string;
 }
 
 export const SocketContext2 = createContext<iSocketContext | null>(null);
 
-export const SocketContextProvider = ({ children}: {children: React.ReactNode}) => {
-
+export const SocketContextProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<SocketUser[] | null>(null);
@@ -100,68 +118,72 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
   const [isOnline, setIsOnline] = useState<boolean>(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  
+
   const user = useSelector((state: RootState) => state?.user.userInfo);
   const currentSocketUser = onlineUsers?.find(
     (onlineUser) => onlineUser.userId === user?.id
   );
 
-  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  //const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const localStream = useRef<MediaStream | null>(null);
   const [peer, setPeer] = useState<PeerData | null>(null);
 
-  const setVoiceCall = (value : boolean) => {
+  const setVoiceCall = (value: boolean) => {
     setIsVoiceCall(value);
   };
 
   const logoutUser = (userId: string) => {
-    if(socket){
-      socket.emit('logout', userId)
-    };
+    if (socket) {
+      socket.emit("logout", userId);
+    }
   };
 
   const getMediaStream = async (faceMode?: string, isAudio?: boolean) => {
-    if (localStream) {
-      return localStream;
+    if (localStream.current) {
+      return localStream.current;
     }
-  
+
     try {
       //const devices = await navigator.mediaDevices.enumerateDevices();
       // const videoDevices = !isVoiceCall
       //   ? devices.filter((device) => device.kind === "videoinput")
       //   : devices.filter((device) => device.kind === "audioinput");
-  
-      const constraints: MediaStreamConstraints = isAudio || isVoiceCall
-        ? { audio: true, video: false }
-        : {
-            audio: true,
-             video: true
-            // video: {
-            //   width: { min: 640, ideal: 1280, max: 1920 },
-            //   height: { min: 360, ideal: 720, max: 1080 },
-            //   frameRate: { min: 16, ideal: 30, max: 30 },
-            //   facingMode: videoDevices.length > 0 ? faceMode : undefined,
-            // },
-          };
-  
+
+      const constraints: MediaStreamConstraints =
+        isAudio || isVoiceCall
+          ? { audio: true, video: false }
+          : {
+              audio: true,
+              video: true,
+              // video: {
+              //   width: { min: 640, ideal: 1280, max: 1920 },
+              //   height: { min: 360, ideal: 720, max: 1080 },
+              //   frameRate: { min: 16, ideal: 30, max: 30 },
+              //   facingMode: videoDevices.length > 0 ? faceMode : undefined,
+              // },
+            };
+
       console.log("Constraints used:", constraints);
-  
+
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       if (!stream) {
         throw new Error("No media stream received");
       }
-  
+
       console.log("Stream obtained:", stream);
-      
-      setLocalStream(stream);
-  
+
+      //setLocalStream(stream);
+      localStream.current = stream;
+
       return stream;
     } catch (error) {
       console.error("Failed to get the stream:", error);
-      setLocalStream(null);
+      //setLocalStream(null);
+      localStream.current = null;
       return null;
     }
   };
-  
+
   //showing the notification
   const onIncomingCall = (participants: Participants) => {
     setConnect(true);
@@ -169,21 +191,20 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
     setOngoingCall({
       participants,
       isRinging: true,
-      isVoiceCall: participants.isVoiceCall
+      isVoiceCall: participants.isVoiceCall,
     });
   };
 
   //end
   const handleHangup = (data: {
-    ongoingCall?: OngoingCall | null,
-    isEmitHangUp?: boolean,
-    isMissed?:boolean,
+    ongoingCall?: OngoingCall | null;
+    isEmitHangUp?: boolean;
+    isMissed?: boolean;
   }) => {
-
     if (socket && user?.id && data?.ongoingCall && data?.isEmitHangUp) {
       const { caller, receiver, isVoiceCall } = data.ongoingCall.participants;
-      const callType = isVoiceCall ? "audio" : "video"; 
-      
+      const callType = isVoiceCall ? "audio" : "video";
+
       socket.emit("hangup", {
         ongoingCall: data.ongoingCall,
         userHangingupId: user.id,
@@ -191,58 +212,66 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
       });
 
       let typeOfCall: string;
-      if(caller.userId == user.id && callType === 'audio' && callDuration <= 0){
-        typeOfCall = 'noAudioAnswer'
-      }else if (caller.userId == user.id  && callType === 'video' && callDuration <= 0){
-        typeOfCall = 'noVideoAnswer'
-      }else if( receiver.userId == user.id  && callType === 'audio'){
-        typeOfCall = 'missedAudio'
-       }else if( receiver.userId == user.id  && callType === 'video'){
-        typeOfCall = 'missedVideo'
-       }else{
+      if (
+        caller.userId == user.id &&
+        callType === "audio" &&
+        callDuration <= 0
+      ) {
+        typeOfCall = "noAudioAnswer";
+      } else if (
+        caller.userId == user.id &&
+        callType === "video" &&
+        callDuration <= 0
+      ) {
+        typeOfCall = "noVideoAnswer";
+      } else if (receiver.userId == user.id && callType === "audio") {
+        typeOfCall = "missedAudio";
+      } else if (receiver.userId == user.id && callType === "video") {
+        typeOfCall = "missedVideo";
+      } else {
         typeOfCall = callType;
-       };
-      
-        setMessages({
-          sender: caller.userId,
-          receiver: {
-            _id: receiver.userId,
-            username: receiver.profile.username,
-            image: receiver.profile.image,
-          },
-          callType: typeOfCall,
-          callDuration: callDuration,
-          message: `${callType} call ended`, // Optional message
-          type: "call",
-          isMissed: isCallEnded === false, // If duration is 0, mark as missed
-          isRead: false,
-          status: "read",
-          createdAt: new Date().toISOString(),
-        });
-      
+      }
+
+      setMessages({
+        sender: caller.userId,
+        receiver: {
+          _id: receiver.userId,
+          username: receiver.profile.username,
+          image: receiver.profile.image,
+        },
+        callType: typeOfCall,
+        callDuration: callDuration,
+        message: `${callType} call ended`, // Optional message
+        type: "call",
+        isMissed: isCallEnded === false, // If duration is 0, mark as missed
+        isRead: false,
+        status: "read",
+        createdAt: new Date().toISOString(),
+      });
     }
-    
-    if (localStream) {
-      localStream.getTracks().forEach((track) => track.stop());
-      setLocalStream(null);
+
+    if (localStream.current) {
+      localStream.current.getTracks().forEach((track) => track.stop());
+      // setLocalStream(null);
+      localStream.current = null;
     }
-  
-    if(data?.isMissed === true ){
-      callLogHandler(ongoingCall,{isMissed: true})
-    }else if(data?.isMissed === false){
-      callLogHandler(ongoingCall,{isMissed: false})
+
+    if (data?.isMissed === true) {
+      callLogHandler(ongoingCall, { isMissed: true });
+    } else if (data?.isMissed === false) {
+      callLogHandler(ongoingCall, { isMissed: false });
     }
-    
+
     setIsCallEnded(true);
     setOngoingCall(null);
     if (peer) {
       peer?.peerConnection.destroy();
     }
-    setPeer(null); 
+    setPeer(null);
   };
 
   // create peer
-  const createPeer =  async (stream: MediaStream, initiator: boolean) => {
+  const createPeer = async (stream: MediaStream, initiator: boolean) => {
     const iceServers: RTCIceServer[] = [
       {
         urls: [
@@ -280,11 +309,16 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
     });
 
     // Debug peer connection states
-    const rtcPeerConnection: RTCPeerConnection = (peer as unknown as { _pc: RTCPeerConnection })._pc;
+    const rtcPeerConnection: RTCPeerConnection = (
+      peer as unknown as { _pc: RTCPeerConnection }
+    )._pc;
 
     rtcPeerConnection.oniceconnectionstatechange = () => {
-      console.log("ICE Connection State:", rtcPeerConnection.iceConnectionState);
-      
+      console.log(
+        "ICE Connection State:",
+        rtcPeerConnection.iceConnectionState
+      );
+
       setTimeout(() => {
         if (
           rtcPeerConnection.iceConnectionState === "disconnected" ||
@@ -293,9 +327,8 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
           console.warn("Call disconnected, hanging up...");
           handleHangup({});
         }
-      }, 5000); 
+      }, 5000);
     };
-    
 
     return peer;
   };
@@ -303,9 +336,9 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
   //initiate call
   const handleCall = async (user: SocketUser, isAudio: boolean) => {
     setIsCallEnded(false);
-    setConnect(false)
+    setConnect(false);
     if (!currentSocketUser || !socket) return;
-    const stream = await getMediaStream('faceMode', isAudio);
+    const stream = await getMediaStream("faceMode", isAudio);
     if (!stream) {
       console.error("No stream in handleCall");
       return;
@@ -354,7 +387,7 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
   // accept call
   const handleJoinCall = async (ongoingCall: OngoingCall) => {
     setIsCallEnded(false);
-    setConnect(false)
+    setConnect(false);
     setIsVoiceCall(ongoingCall.isVoiceCall as boolean);
     setOngoingCall((prev) => {
       if (prev) {
@@ -363,13 +396,14 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
       return prev;
     });
 
-   const stream = await getMediaStream('faceMode', ongoingCall.isVoiceCall);
-    
+    const stream = await getMediaStream("faceMode", ongoingCall.isVoiceCall);
+
     if (!stream) {
       console.error("Could not get stream in handleJoinCall");
       return;
     }
-    setLocalStream(stream);
+    //setLocalStream(stream);
+    localStream.current = stream;
 
     // Create peer as non-initiator for answering
     const newPeer = await createPeer(stream, false);
@@ -392,14 +426,31 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
   };
 
   //call log handler
-  const callLogHandler = (ongoingCall: OngoingCall | null, participants?:{caller?: string, receiver?: string, callType?: string, callDuration?: number, type?:string, isMissed?: boolean} | null) => {
-    if(socket){
-      socket.emit('missedcall', {...ongoingCall, callDuration:callDuration, type:'call', callType: isVoiceCall ? 'audio':'video', isMissedCall: participants?.isMissed ,...participants});
+  const callLogHandler = (
+    ongoingCall: OngoingCall | null,
+    participants?: {
+      caller?: string;
+      receiver?: string;
+      callType?: string;
+      callDuration?: number;
+      type?: string;
+      isMissed?: boolean;
+    } | null
+  ) => {
+    if (socket) {
+      socket.emit("missedcall", {
+        ...ongoingCall,
+        callDuration: callDuration,
+        type: "call",
+        callType: isVoiceCall ? "audio" : "video",
+        isMissedCall: participants?.isMissed,
+        ...participants,
+      });
       setOngoingCall(null);
       setIsVoiceCall(false);
     }
-  }
-  
+  };
+
   //async if needed
   //establish peer connection
   const completePeerConnection = async (data: {
@@ -407,29 +458,26 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
     ongoingCall: OngoingCall;
     isCaller: boolean;
   }) => {
-  
     console.log("Received signal:", data);
 
     try {
-      
-      if (!localStream) {
+      if (!localStream.current) {
         console.warn("Local stream is missing, waiting for it...");
-        return
+        return;
       }
 
-      
-    // Fetch media stream dynamically if missing
-        // let stream: MediaStream | null = localStream ;
-        // if (!stream) {
-        //   console.warn("Local stream is missing, fetching...");
-          
-        //   stream = await getMediaStream("faceMode", data.ongoingCall.isVoiceCall);
-        //   if (!stream) {
-        //     console.error("Failed to get local stream");
-        //     return;
-        //   }
-        //   setLocalStream(stream);
-        // }
+      // Fetch media stream dynamically if missing
+      // let stream: MediaStream | null = localStream ;
+      // if (!stream) {
+      //   console.warn("Local stream is missing, fetching...");
+
+      //   stream = await getMediaStream("faceMode", data.ongoingCall.isVoiceCall);
+      //   if (!stream) {
+      //     console.error("Failed to get local stream");
+      //     return;
+      //   }
+      //   setLocalStream(stream);
+      // }
 
       // If peer exists, just signal
       if (peer?.peerConnection && !peer.peerConnection.destroyed) {
@@ -441,7 +489,7 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
       // Create new peer if we don't have one
       if (!peer?.peerConnection) {
         console.log("Creating new peer in completePeerConnection");
-        const newPeer = await createPeer(localStream, false);
+        const newPeer = await createPeer(localStream.current, false);
         setPeer({
           peerConnection: newPeer,
           participantUser: data.ongoingCall.participants.receiver,
@@ -468,19 +516,19 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
   };
 
   //online-status
-  const checkOnlineStatus = (oppositeUserId: string ) => {
-    if(socket && oppositeUserId){  
-      socket.emit('checkOnlineStatus', oppositeUserId);
-      } 
+  const checkOnlineStatus = (oppositeUserId: string) => {
+    if (socket && oppositeUserId) {
+      socket.emit("checkOnlineStatus", oppositeUserId);
+    }
   };
 
   //get user id
-  const handleStatus =  ( oppositeUserId: string | null): void => {
-    if(oppositeUserId){
+  const handleStatus = (oppositeUserId: string | null): void => {
+    if (oppositeUserId) {
       setOppositeUserId(oppositeUserId);
-    };
+    }
     return;
-  }
+  };
 
   //initializing a socket
   useEffect(() => {
@@ -522,7 +570,7 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
       return;
     }
     socket.emit("register", user);
-    socket.emit('deliver', user?.id);
+    socket.emit("deliver", user?.id);
     socket.on("getUsers", (res) => {
       setOnlineUsers(res);
     });
@@ -533,7 +581,7 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
       });
     };
   }, [socket, isSocketConnected, user?.id]);
-  
+
   //calls
   useEffect(() => {
     if (!socket || !isSocketConnected) return;
@@ -550,10 +598,14 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
 
   // //autho reject
   useEffect(() => {
-    let timeOutInterval: NodeJS.Timeout | null = null; 
+    let timeOutInterval: NodeJS.Timeout | null = null;
     if (connect) {
       timeOutInterval = setTimeout(() => {
-        handleHangup({ongoingCall: ongoingCall ? ongoingCall : undefined, isEmitHangUp: true, isMissed: true});
+        handleHangup({
+          ongoingCall: ongoingCall ? ongoingCall : undefined,
+          isEmitHangUp: true,
+          isMissed: true,
+        });
         setConnect(false);
       }, 10000);
     }
@@ -567,87 +619,104 @@ export const SocketContextProvider = ({ children}: {children: React.ReactNode}) 
   //call timing
   useEffect(() => {
     let intervalRef: ReturnType<typeof setInterval>;
-    if(peer?.peerConnection){
+    if (peer?.peerConnection) {
       intervalRef = setInterval(() => {
-        setCallDuration( prev => prev + 1);
-      },1000);
+        setCallDuration((prev) => prev + 1);
+      }, 1000);
     }
     return () => {
-      clearInterval(intervalRef)
-    }
+      clearInterval(intervalRef);
+    };
   }, [peer?.stream]);
-
 
   //chat-receive message
   useEffect(() => {
-  if (!socket || !user ) return;
+    if (!socket || !user) return;
     const handleReceiveMessage = (message: Chats) => {
       setMessages(message);
-      if(message.senderProfile?.username && message.senderProfile.image && message.senderProfile._id){
-        const currentUrl = searchParams.toString() 
-        ? `${pathname}/?${searchParams.toString()}` 
-        : pathname;
+      if (
+        message.senderProfile?.username &&
+        message.senderProfile.image &&
+        message.senderProfile._id
+      ) {
+        const currentUrl = searchParams.toString()
+          ? `${pathname}/?${searchParams.toString()}`
+          : pathname;
 
         const expectedUrl = `/user/chat/?id=${String(message.sender)}`;
-        if(currentUrl !== expectedUrl){
-          messageToast(message?.senderProfile?.image[0] , message?.senderProfile?.username, message.message, message.sender);
-        } 
+        if (currentUrl !== expectedUrl) {
+          messageToast(
+            message?.senderProfile?.image[0],
+            message?.senderProfile?.username,
+            message.message,
+            message.sender
+          );
+        }
       }
     };
 
     const handlePassedMessage = (message: Chats) => {
       setMessages(message);
-    }
+    };
 
-    const handleReadedMessage = (data: {chatId: string, status: string, isRead: boolean}) => {
-      setMessages((prevMessages) => 
-        prevMessages ? { ...prevMessages, status: data.status, isRead: true } : prevMessages
+    const handleReadedMessage = (data: {
+      chatId: string;
+      status: string;
+      isRead: boolean;
+    }) => {
+      setMessages((prevMessages) =>
+        prevMessages
+          ? { ...prevMessages, status: data.status, isRead: true }
+          : prevMessages
       );
     };
-    
-     socket.on('receiveMessage', handleReceiveMessage);
-     socket.on('messageSent', handlePassedMessage);
-    socket.on('messageReaded', handleReadedMessage);
+
+    socket.on("receiveMessage", handleReceiveMessage);
+    socket.on("messageSent", handlePassedMessage);
+    socket.on("messageReaded", handleReadedMessage);
 
     return () => {
-      socket.off('receiveMessage', handleReceiveMessage);
-      socket.off('messageSent', handlePassedMessage);
-    socket.off('messageReaded', handleReadedMessage);
+      socket.off("receiveMessage", handleReceiveMessage);
+      socket.off("messageSent", handlePassedMessage);
+      socket.off("messageReaded", handleReadedMessage);
     };
   }, [socket, user]);
 
   //status getter
-    useEffect(() => {
-      if (!socket || !user || !oppositeUserId) return;
-      const handleOnlineStatus = (status: { userId: string; isOnline: boolean }) => {
-        if (status.userId === oppositeUserId) {
-            setIsOnline(status.isOnline);
-        };
-      };
-       socket.on('onlineStatus', handleOnlineStatus);
-       return () => {
-        socket.off('onlineStatus', handleOnlineStatus);
+  useEffect(() => {
+    if (!socket || !user || !oppositeUserId) return;
+    const handleOnlineStatus = (status: {
+      userId: string;
+      isOnline: boolean;
+    }) => {
+      if (status.userId === oppositeUserId) {
+        setIsOnline(status.isOnline);
       }
-    }, [socket, user, oppositeUserId]);
-  
+    };
+    socket.on("onlineStatus", handleOnlineStatus);
+    return () => {
+      socket.off("onlineStatus", handleOnlineStatus);
+    };
+  }, [socket, user, oppositeUserId]);
+
   //notification
-    useEffect(() => {
-      if (!socket) return;
-  
-       socket.on('newNotification', (data) => {
-        notificationToast(data?.image , data?.username, data?.message)
-      });
-      return () => {
-        socket.off('newNotification');
-      };
-    }, [socket]);
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("newNotification", (data) => {
+      notificationToast(data?.image, data?.username, data?.message);
+    });
+    return () => {
+      socket.off("newNotification");
+    };
+  }, [socket]);
 
   return (
     <SocketContext2.Provider
       value={{
         onlineUsers,
         ongoingCall,
-        localStream,
+        localStream: localStream.current,
         peer,
         handleCall,
         handleJoinCall,

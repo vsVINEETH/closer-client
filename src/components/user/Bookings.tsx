@@ -111,20 +111,20 @@ const BookingDetailsTable: React.FC = () => {
                   <td className="py-4 px-6 text-sm text-gray-800 dark:text-lightGray">
                     <div className="flex flex-col items-center justify-center">
                       <img
-                        src={event.eventId.image[0]}
-                        alt={event.eventId.title}
+                        src={event?.eventId?.image[0]}
+                        alt={event?.eventId?.title || 'N/A'}
                         className="w-12 h-12 rounded object-cover"
                       />
-                      <p className="mt-2 text-center">{event.eventId.title}</p>
+                      <p className="mt-2 text-center">{event?.eventId?.title || 'N/A'}</p>
                     </div>
                   </td>
 
                   {/* Location */}
                   <td className="py-4 px-6 text-sm text-gray-800 dark:text-lightGray">
                     <div className="flex flex-col items-center">
-                      <span className="font-medium">{event.eventId.location}</span>
+                      <span className="font-medium">{event?.eventId?.location || 'N/A'}</span>
                       <a
-                        href={event.eventId.locationURL}
+                        href={event?.eventId?.locationURL || '#'}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-500 hover:font-semibold mt-1"
@@ -136,19 +136,19 @@ const BookingDetailsTable: React.FC = () => {
 
                   {/* Event Date */}
                   <td className="py-4 px-6 text-sm text-gray-800 dark:text-lightGray">
-                    {new Date(event.eventId.eventDate).toLocaleDateString()}
+                    {new Date(event?.eventId?.eventDate).toLocaleDateString() || 'N/A'}
                   </td>
 
                   {/* Booked Slots */}
                   <td className="py-4 px-6 text-sm text-gray-800 dark:text-lightGray">
-                    <span className="block">{event.bookedSlots}</span>
+                    <span className="block">{event?.bookedSlots}</span>
                   </td>
 
                   {/* Price per Slot */}
                   <td className="py-4 px-6 text-sm text-gray-800 dark:text-lightGray">
                     <span>
                       {event?.bookedSlots
-                        ? (event.billedAmount / event?.bookedSlots).toFixed(2)
+                        ? (event?.billedAmount / event?.bookedSlots).toFixed(2)
                         : 0}
                     </span>
                   </td>

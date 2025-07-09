@@ -232,12 +232,12 @@ const Wallet: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <div>
+                <div key={transaction.id}>
                   <p className="font-bold dark:text-lightGray">{transaction.description}</p>
                   <p className="text-sm text-gray-600 dark:text-lightGray">{new Date(transaction.createdAt).toLocaleDateString()}</p>
                 </div>
-                <p className={`font-bold  ${transaction.paymentType === 'debit' ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
-                  {transaction.paymentType === 'debit' ? `+₹${transaction.amount.toFixed(2)}` : `-₹${transaction.amount.toFixed(2)}`}
+                <p className={`font-bold  ${transaction.paymentType === 'credit' ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+                  {transaction.paymentType === 'credit' ? `+₹${transaction.amount.toFixed(2)}` : `-₹${transaction.amount.toFixed(2)}`}
                 </p>
               </motion.li>
             ))}

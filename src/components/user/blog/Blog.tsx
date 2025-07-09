@@ -38,7 +38,7 @@ const Blog: React.FC = () => {
     search: debouncedSearch || '',
     startDate: filterOption.startDate || '',
     endDate: filterOption.endDate || '',
-    status: filterOption.status ,
+    status: true,
     sortColumn: 'createdAt',
     sortDirection: sortOption === 'Newest' ? 'desc' : 'asc',
     page: currentPage,

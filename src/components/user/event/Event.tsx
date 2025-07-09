@@ -5,7 +5,7 @@ import { Coins, Hand } from 'lucide-react';
 import { useFetch } from '@/hooks/fetchHooks/useAdminFetch';
 import { useDebounce } from '@/hooks/helperHooks/useDebounce';
 interface Event {
-  _id: string;
+  id: string;
   title: string;
   location: string;
   locationURL: string;
@@ -43,7 +43,7 @@ const Event: React.FC = () => {
     search: debouncedSearch || '',
     startDate: filterOption.startDate || '',
     endDate: filterOption.endDate || '',
-    status: filterOption.status ,
+    status: true,
     sortColumn: 'createdAt',
     sortDirection: sortOption === 'Newest' ? 'desc' : 'asc',
     page: currentPage,
@@ -100,7 +100,7 @@ const Event: React.FC = () => {
       <div className="grid grid-cols-1  sm:grid-cols-2 md:grid-cols-3 gap-6">
         {events && events?.map((event) => (
           <div
-            key={event._id}
+            key={event.id}
             className="bg-white dark:bg-darkGray rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 border border-gray-700 overflow-hidden"
           >
             <img
@@ -134,10 +134,11 @@ const Event: React.FC = () => {
                 <p className="text-gray-600 dark:text-gray-300 text-sm mt-2 line-clamp-3">{event.description}</p>
 
                 <button
-                  onClick={() => router.push(`/user/events/${event._id}`)}
+                  disabled={event.slots <= 0}
+                  onClick={() => router.push(`/user/events/${event.id}`)}
                   className="w-full mt-4 py-2 text-white font-semibold rounded-lg bg-customPink dark:bg-gray-600 hover:opacity-90 hover:scale-[1.02] transition-transform duration-300"
                 >
-                  Book Now
+                  {event.slots <= 0 ? 'Sold out' :'Book Now'}
                 </button>
             </div>
           </div>

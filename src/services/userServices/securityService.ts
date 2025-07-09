@@ -6,7 +6,7 @@ export const useSecurityService = () => {
 
     const restrictUser = async (userIdToBlock: string, userId: string, userPreferences: PreferenceData) => {
         return await handleRequest({
-            url: "/api/user/block",
+            url: "/api/user/users/block",
             method: "PUT",
             data:{
                 blockedId: userIdToBlock,
@@ -18,7 +18,7 @@ export const useSecurityService = () => {
 
     const allowUserToIntract = async (userIdToUnblock: string, userId: string) => {
         return await handleRequest({
-            url:'/api/user/unblock',
+            url:'/api/user/users/unblock',
             method:'PUT',
             data:{
                 unblockId: userIdToUnblock,
@@ -29,7 +29,7 @@ export const useSecurityService = () => {
 
     const reportUser = async (userIdToReport: string, userId: string, userPreferences: PreferenceData) => {
         return await handleRequest({
-            url: "/api/user/report",
+            url: "/api/user/users/report",
             method: "PUT",
             data: {
                 reportedId: userIdToReport,
@@ -41,7 +41,7 @@ export const useSecurityService = () => {
 
     const verifyOTP = async (userEmail: string, OTP: string[]) => {
         return await handleRequest({
-            url:'/api/user/forgot_verify',
+            url:'/api/user/forgot-verify',
             method: 'POST',
             data:{
               email: userEmail,
@@ -52,7 +52,7 @@ export const useSecurityService = () => {
 
     const resendOTP = async (userEmail: string) => {
         return await handleRequest({
-            url: '/api/user/forgot_resend',
+            url: '/api/user/forgot-resend',
             method:'POST',
             data:{
                 email: userEmail
@@ -62,7 +62,7 @@ export const useSecurityService = () => {
 
     const updatePassword = async (userId: string, updatedPasswordData: ChangePasswordData ) => {
         return await handleRequest({
-            url: "/api/user/change_password",
+            url: "/api/user/change-password",
             method: "POST",
             data: {
               id: userId,

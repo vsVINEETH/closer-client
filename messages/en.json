@@ -55,5 +55,51 @@
       "messages":"Messages",
       "notifications":"Notifications"
 
+    },
+
+    "Dropdown": {
+      "wallet": "Wallet",
+      "security": "Security",
+      "blockedUsers": "Blocked Users",
+      "bookedEvent": "Confirmed Events",
+      "logout": "Logout"
+    },
+
+    "TableHeadline":{
+      "events":"Upcoming evenets for you",
+      "blogs":"enhance your relationships",
+      "blockedUsers":"Blocked Users",
+      "confirmedEvents":"Confirmed Events"
+    },
+
+    "Prosidebar":{
+      "primeDiscovery":"Prime Discovery",
+      "description":"Preferences show you people who match your vibe, but won't limit who you see - you will still be able to match with people outside your selections",
+      "agePreference":"Age Preference",
+      "distancePreference":"Distance Preference",
+      "interestedIn":"Interested In",
+      "selectAnOption":"Select an option",
+      "female":"Female",
+      "male":"Male",
+      "others":"others",
+      "lookingFor":"Looking for",
+      "findNewFriends":"Find new freinds",
+      "shortTerm":"Short-term relationship",
+      "longTerm":"Long-term relationship",
+      "stillFigure":"Still figuring out",
+      "username":"Username",
+      "phone":"Phone",
+      "dob":"Dob",
+      "yourGallery":"Your Gallery"
+    },
+
+    "PaginationFilter":{
+      "previous":"Previous",
+      "page":"Page",
+      "of":"of",
+      "next":"Next",
+      "newest":"Newest",
+      "oldest":"Oldest"
     }
+
   }

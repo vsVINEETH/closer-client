@@ -27,7 +27,7 @@ const Dashboard: React.FC = () => {
     if(response.data){
       setDashboardData(response.data);
     };
-  }
+  };
 
   const handleFilter = (startDate: string, endDate: string) => {
     setFilter({startDate, endDate});

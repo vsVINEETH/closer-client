@@ -8,7 +8,7 @@ export const connectSocket = (): Socket => {
             withCredentials:true,
             autoConnect: true,
         });
-    }
+    };
 
     return socket;
 };

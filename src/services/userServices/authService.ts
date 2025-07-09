@@ -15,7 +15,7 @@ const login = async (loginCredentials: LoginCrendentialsType) => {
 
 const socialLogin = async (userSocialLogDetails: SocialLogCredentialType) => {
     return await handleRequest({
-        url: "/api/user/loginAuth",
+        url: "/api/user/login-auth",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         data: userSocialLogDetails,

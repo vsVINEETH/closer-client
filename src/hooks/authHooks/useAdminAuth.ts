@@ -6,7 +6,7 @@ import { logout as adminLogout, login as adminLogin } from "@/store/slices/admin
 import { useRouter } from "next/navigation";
 import { LoginCrendentialsType } from "@/types/customTypes";
 import { useLoading } from "@/context/LoadingContext";
-
+import { errorToast } from "@/utils/toasts/toast";
 export const useAuth = () => {
   const { login, logout } = useAuthService();
   const {isLoading, setLoading} = useLoading()
@@ -19,6 +19,7 @@ export const useAuth = () => {
     const result = await login(loginCredentials);
     if (result.error) {
       setError(result.error);
+      errorToast('Invalid credentials')
       return;
     }else{
       

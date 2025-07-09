@@ -14,7 +14,7 @@ export const useFetchService = () => {
 
     const fetchAdvertisementData = async (searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url:'/api/admin/advertisement',
+            url:'/api/admin/advertisements',
             method:'GET',
             params: searchFilterSortParams
         })
@@ -22,7 +22,7 @@ export const useFetchService = () => {
 
     const fetchSubscriptionData = async (searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url:'/api/admin/subscription_data',
+            url:'/api/admin/subscriptions',
             method:'GET',
             params: searchFilterSortParams,
         })
@@ -30,7 +30,7 @@ export const useFetchService = () => {
 
     const fetchEmployeeData = async (searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url:'/api/admin/employee_data',
+            url:'/api/admin/employees',
             method:'GET',
             params: searchFilterSortParams
         })
@@ -38,7 +38,7 @@ export const useFetchService = () => {
 
     const fetchUsersData = async (searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
-            url:'/api/admin/user_data',
+            url:'/api/admin/users',
             method:'GET',
             params: searchFilterSortParams
         })

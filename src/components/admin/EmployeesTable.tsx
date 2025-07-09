@@ -106,11 +106,13 @@ const EmployeesTable: React.FC = () => {
             const response = await createEmployee(createFormData, searchFilterSortPagination);
 
             if(response.data){
+                let data = response.data.employeeData
+                setReasult(data.employee);
+                setTotal(data.total);
                 successToast('Employee created')
                 setCreateModal(false);
-                fetchData(); // it should be changed
-            }
-        }
+            };
+        };
 
     };
 
@@ -122,8 +124,8 @@ const EmployeesTable: React.FC = () => {
 
         if(response.data){
             successToast("Employee has been blocked");
-            //setReasult(response.data.employee);
-            fetchData()
+            setReasult(response.data.employee);
+           // fetchData()
         };
     };
 

@@ -43,10 +43,10 @@ jobs:
     runs-on: self-hosted
     steps:
      - name: Pull image from docker hub
-       run: docker pull vineeth1927/closer-client:latest
+       run: sudo docker pull vineeth1927/closer-client:latest
 
      - name: Delete old container
-       run: docker rm -f nextjs-app-container
+       run: sudo docker rm -f nextjs-app-container || true
 
      - name: Create .env.local file on the server
        run: |
@@ -64,5 +64,5 @@ jobs:
         echo "NODE_ENV=${{ secrets.NODE_ENV }}" >> .env.local
 
      - name: Run Docker Container
-       run: docker run -d -p 3000:3000 --name nextjs-app-container vineeth1927/closer-client:latest
+       run: sudo docker run -d -p 3000:3000 --name nextjs-app-container vineeth1927/closer-client:latest
 
