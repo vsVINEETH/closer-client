@@ -20,8 +20,8 @@ export const useAuth = () => {
         setLoading(true);
         const response = await login(loginCredentials);
         if (response.error) {
-          setError(response.error);
-          errorToast(response.error);
+           setError(response.error);
+           errorToast(response.error);
         }
         if(response.data){
             const { user } = response.data;
