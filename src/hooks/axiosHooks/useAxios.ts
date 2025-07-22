@@ -39,7 +39,7 @@ const useAxios = <T = any>(): UseAxiosReturn<T> => {
   const adminRole = useSelector((state: RootState) => state.admin.isAuthenticated ? state.admin.adminInfo?.role : null);
 
   const axiosInstance: AxiosInstance = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_BACKEND_URL_DEV, // 'http://localhost:5000',
+    baseURL: process.env.NEXT_PUBLIC_BACKEND_URL, // 'http://localhost:5000',
     withCredentials: true,
   });
 
