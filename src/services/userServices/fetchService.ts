@@ -12,10 +12,11 @@ export const useFetchService = () => {
         });
     };
 
-    const fetchAdvertisementData = async () => {
+    const fetchAdvertisementData = async (searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
             url: "/api/user/advertisements",
             method: "GET", 
+            params: searchFilterSortParams
         })
     };
 

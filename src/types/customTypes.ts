@@ -37,6 +37,83 @@ export interface Filter {
 }
 
 export interface DBD {
+  userData: {
+    newUsers: {
+      count: number;
+    }[];
+    activeUsers: {
+      count: number;
+    }[];
+    primeMembers: {
+      count: number;
+    }[];
+    totalUsers: {
+      count: number;
+    }[];
+    monthlyNewUsers: {
+      month: string;
+      count: number;
+    }[];
+    genderSplit: {
+      _id: string | null; // gender could be null
+      count: number;
+    }[];
+  };
+
+  salesData: {
+    eventSales: {
+      month: string;
+      totalSales: number;
+      soldSlots: number;
+      avgSalesPerMonth: number;
+      dailySales: {
+        createdAt: string;
+        billedAmount: number;
+        count: number;
+        billedSlots: number; // added in v2
+      }[];
+    }[];
+    subscriptionSales: {
+      month: string;
+      planType: string;
+      count: number;
+      amount: number;
+      dailySales: {
+        createdAt: string;
+        billedAmount: number;
+        count: number;
+      }[];
+    }[];
+    totalMonthlySales: {
+      month: string;
+      totalIncome: number;
+    }[];
+  };
+
+  employeeData: [
+    {
+      totalEmployees: [
+        {
+          count: number;
+        }
+      ];
+      activeEmployees: [
+        {
+          count: number;
+        }
+      ];
+    }
+  ];
+
+  eventData: [
+    {
+      upcomingEvents: number;
+    }
+  ];
+}
+
+
+export interface DBD_V1 {
   userData:{
     newUsers:{
       count: number
@@ -104,7 +181,7 @@ export interface DBD {
   }],
 };
 
-export interface Report {
+export interface Report_V1 {
   salesData:{
     eventSales:{
       month: string;
@@ -134,8 +211,40 @@ export interface Report {
   }
 }
 
+export interface Report {
+  salesData: {
+    eventSales: {
+      month: string;
+      totalSales: number;
+      soldSlots: number;
+      avgSalesPerMonth: number;
+      dailySales: {
+        createdAt: string;
+        billedAmount: number;
+        count: number;
+        billedSlots: number;
+      }[];
+    }[];
+    subscriptionSales: {
+      month: string;
+      planType: string;
+      count: number;
+      amount: number;
+      dailySales: {
+        createdAt: string;
+        billedAmount: number;
+        count: number;
+      }[];
+    }[];
+    totalMonthlySales: {
+      month: string;
+      totalIncome: number;
+    }[];
+  };
+}
+
 export interface SubscriptionData {
-  _id:string,
+  id:string,
   planType: string,
   price: string,
   createdAt: string,
@@ -280,7 +389,7 @@ export interface Advertisement {
 }
 
 export interface UserDTO {
-  _id: string
+  id: string
   username: string
   email: string
   password?: string

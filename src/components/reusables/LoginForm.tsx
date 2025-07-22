@@ -32,7 +32,7 @@ const LoginForm: React.FC<LoginProps> = ({ htmlFor }) => {
       const {handleLogin} = useAuth();
 
       const onSubmit = async (loginCrendentials:LoginCrendentialsTypes) => {
-        await handleLogin(loginCrendentials)
+        await handleLogin(loginCrendentials);
     };
   
     type FieldName = "email" | "password";

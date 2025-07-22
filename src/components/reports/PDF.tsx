@@ -17,11 +17,11 @@ const download = (salesData: Report) => {
     event.dailySales.forEach((daily) => {
       rows.push([
         event.month,  // Month from eventSales
-        daily.date,   // Date from dailySales
+        daily.createdAt,   // Date from dailySales
         "Event",      // Category label
         "-",          // No plan type for events
-        daily.count,  // Count from dailySales
-        daily.amount, // Amount from dailySales
+        daily.billedSlots,  // Count from dailySales
+        daily.billedAmount, // Amount from dailySales
       ]);
     });
   });
@@ -31,11 +31,11 @@ const download = (salesData: Report) => {
     subscription.dailySales.forEach((daily) => {
       rows.push([
         subscription.month, // Month from subscriptionSales
-        daily.date,         // Date from dailySales
+        daily.createdAt,         // Date from dailySales
         "Subscription",     // Category label
         subscription.planType, // Plan Type from subscriptionSales
         daily.count,        // Count from dailySales
-        daily.amount,       // Amount from dailySales
+        daily.billedAmount,       // Amount from dailySales
       ]);
     });
   });

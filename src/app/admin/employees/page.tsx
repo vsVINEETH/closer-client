@@ -1,9 +1,8 @@
-import React from 'react'
-import Header from '@/components/reusables/Header'
-import Footer from '@/components/reusables/Footer'
-import SideBar from '@/components/admin/SideBar'
-import EmployeesTable from '@/components/admin/EmployeesTable'
-
+import React from 'react';
+import Header from '@/components/reusables/Header';
+import Footer from '@/components/reusables/Footer';
+import SideBar from '@/components/admin/SideBar';
+import EmployeesTable from '@/components/admin/EmployeesTable';
 
 const Employees: React.FC = () => {
   return (
@@ -18,6 +17,6 @@ const Employees: React.FC = () => {
       <Footer htmlFor='admin'/>
     </div>
   )
-}
+};
 
-export default Employees
+export default Employees;

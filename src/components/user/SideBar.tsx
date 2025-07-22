@@ -65,10 +65,6 @@ const SideBar: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [messages, setMessages] = useState<Messages[]>([]);
   const [matches, setMatches] = useState<MatchedUsers[]>([])
-  // () => {
-  //   const storedMatches = localStorage.getItem('matches');
-  //   return storedMatches ? JSON.parse(storedMatches) : [];
-  // });
 
   const [activeTab, setActiveTab] = useState<string>(() => {
     return localStorage.getItem('currentTab') || 'matches';
@@ -216,12 +212,13 @@ const SideBar: React.FC = () => {
       const response = await getMessages(userInfo.id);
   
       if (response?.data) {
-        setMatches(response?.data?.matches?.matches ?? []);
+        console.log(response.data.messages)
+        setMatches(response?.data?.matches ?? []);
         setMessages(response?.data?.messages ?? []);
       }
     } catch (error) {
       console.error("Failed to fetch messages", error);
-    }
+    };
   };
   
 
@@ -230,8 +227,8 @@ const SideBar: React.FC = () => {
     const response = await getMatches(userInfo.id);
 
     if (response.data) {
-      console.log(response.data.matches)
-      setMatches(response.data.matches);
+      console.log(response.data)
+      setMatches(response.data);
     }
   };
 
@@ -331,96 +328,97 @@ const SideBar: React.FC = () => {
         ) : (
           <p className="p-4 text-gray-600">No notifications yet.</p>
         );
+        
         case "messages":
-          const sortedMessages = [...messages].sort((a, b) => {
+            const sortedMessages = [...messages].sort((a, b) => {
             const lastA = a.messages.messages[a.messages.messages.length - 1];
             const lastB = b.messages.messages[b.messages.messages.length - 1];
             const dateA = lastA ? new Date(lastA.createdAt).getTime() : 0;
             const dateB = lastB ? new Date(lastB.createdAt).getTime() : 0;
-            return dateB - dateA; // Sort descending
+            return dateB - dateA; // Descending
           });
-          // console.log(messages,'opo')
-         console.log(sortedMessages,'lop')
+
+          const sortedMatchData = sortedMessages.map((msg) => {
+            const matchId =
+              msg.pair.split("-")[0] === userInfo?.id
+                ? msg.pair.split("-")[1]
+                : msg.pair.split("-")[0];
+            const match = matches.find((m) => m._id === matchId);
+            return { match, message: msg };
+          }).filter((item) => item.match);
+
           return messages ? (
             <div className="p-4 space-y-4">
-            <AnimatePresence>
-              {[...matches]?.length > 0 ? (
-                [...matches]?.map((match) => {
-                  const relevantMessages = sortedMessages.filter(
-                    (val) =>
-                      val.pair === `${match?._id}-${userInfo?.id}` ||
-                      val.pair === `${userInfo?.id}-${match?._id}`
-                  );
-
-                  const latestMessage =
-                    relevantMessages.length > 0
-                      ? relevantMessages[relevantMessages.length - 1]
-                      : null;
-      
-                  const lastMessage = latestMessage ? latestMessage?.messages?.messages : null;
-                  
-                  return (
-                    <motion.div
-                      key={match?._id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.3 }}
-                      className="flex items-center justify-between p-4 bg-gray-100 dark:bg-darkGray rounded-lg shadow-md transition-all duration-200 hover:bg-gray-200 dark:hover:bg-black cursor-pointer"
-                      onClick={() => router.replace(`/user/chat/?id=${match?._id}`)}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <div className="flex items-center space-x-4">
-                        <img
-                          src={match?.image[0] || "/default-avatar.png"}
-                          alt={`${match?.username}'s avatar`}
-                          className="w-12 h-12 rounded-full object-cover border border-gray-300 dark:border-gray-700"
-                        />
-                        <div className="flex flex-col">
-                          <p className="font-semibold text-gray-900 dark:text-white">
-                            {match?.username}
-                          </p>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 truncate w-40">
-                            {lastMessage ? lastMessage[lastMessage.length - 1]?.type === 'text' ? lastMessage[lastMessage.length - 1]?.message : lastMessage[lastMessage.length - 1]?.type === 'audio' ? 'audio' : 'call' :  "Tap to start conversation"}
+              <AnimatePresence>
+                {sortedMatchData.length > 0 ? (
+                  sortedMatchData.map(({ match, message }) => {
+                    const lastMessage = message.messages.messages;
+                    return (
+                      <motion.div
+                        key={match?._id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.3 }}
+                        className="flex items-center justify-between p-4 bg-gray-100 dark:bg-darkGray rounded-lg shadow-md transition-all duration-200 hover:bg-gray-200 dark:hover:bg-black cursor-pointer"
+                        onClick={() => router.replace(`/user/chat/?id=${match?._id}`)}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <div className="flex items-center space-x-4">
+                          <img
+                            src={match?.image[0] || "/default-avatar.png"}
+                            alt={`${match?.username}'s avatar`}
+                            className="w-12 h-12 rounded-full object-cover border border-gray-300 dark:border-gray-700"
+                          />
+                          <div className="flex flex-col">
+                            <p className="font-semibold text-gray-900 dark:text-white">
+                              {match?.username}
+                            </p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 truncate w-40">
+                              {lastMessage?.length
+                                ? lastMessage[lastMessage.length - 1].type === "text"
+                                  ? lastMessage[lastMessage.length - 1].message
+                                  : lastMessage[lastMessage.length - 1].type === "audio"
+                                  ? "audio"
+                                  : "call"
+                                : "Tap to start conversation"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end">
+                          {message.messages.unreadCount ? (
+                            <motion.span
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              exit={{ scale: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="px-2 py-1 text-xs font-bold text-white bg-red-500 rounded-full"
+                            >
+                              {message.messages.unreadCount}
+                            </motion.span>
+                          ) : null}
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {lastMessage?.length
+                              ? new Date(lastMessage[lastMessage.length - 1].createdAt).toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : ""}
                           </p>
                         </div>
-                      </div>
-                      <div className="flex flex-col items-end">
-                        {latestMessage?.messages?.unreadCount ? (
-                          <motion.span
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            exit={{ scale: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="px-2 py-1 text-xs font-bold text-white bg-red-500 rounded-full"
-                          >
-                            {latestMessage?.messages?.unreadCount}
-                          </motion.span>
-                        ) : null}
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {lastMessage
-                            ? new Date(lastMessage[lastMessage.length - 1]?.createdAt).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : ""}
-                        </p>
-                      </div>
-                    </motion.div>
-                  );
-                })
-              ) : (
-                <p className="p-4 text-gray-600">No messages yet.</p>
-              )}
-            </AnimatePresence>
-          </div>
+                      </motion.div>
+                    );
+                  })
+                ) : (
+                  <p className="p-4 text-gray-600">No messages yet.</p>
+                )}
+              </AnimatePresence>
+            </div>
           ) : (
-            <p className="p-4 text-gray-600">
-              No messages yet.
-            </p>
+            <p className="p-4 text-gray-600">No messages yet.</p>
           );
-        
+
         case "matches":
         return matches?.length ? (
           <div className="p-4 space-y-4">

@@ -19,24 +19,24 @@ const DownloadCSV: React.FC<DownloadCSVProps> = ({ salesData }) => {
   // Process event sales
   const eventDailySales = salesData.eventSales.flatMap((event) =>
     event.dailySales.map((sale) => ({
-      date: sale.date,
+      date: sale.createdAt,
       month: event.month,
       category: "Event",
       planType: "-", // No plan type for events
-      count: sale.count,
-      amount: sale.amount,
+      count: sale.billedSlots,
+      amount: sale.billedAmount,
     }))
   );
 
   // Process subscription sales
   const subscriptionDailySales = salesData.subscriptionSales.flatMap((subscription) =>
     subscription.dailySales.map((sale) => ({
-      date: sale.date,
+      date: sale.createdAt,
       month: subscription.month,
       category: "Subscription",
       planType: subscription.planType,
       count: sale.count,
-      amount: sale.amount,
+      amount: sale.billedAmount,
     }))
   );
 

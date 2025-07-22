@@ -103,15 +103,17 @@ const AdvertisementTable: React.FC = () => {
     const {createAd, controllAdListing, editAd, deleteAd} = useAdvertisementCrud()
 
     const debouncedSearch = useDebounce(searchValue, 800);
+    const debouncedSortConfig = useDebounce(sortConfig, 800);
+    const debouncedFilterOptions = useDebounce(filterOption, 1000);
     // const throttledFilters = useThrottle({filterOption, currentPage, pageSize, sortConfig}, 300)
 
     const searchFilterSortPagination = {
       search: debouncedSearch || '',
-      startDate: filterOption.startDate || '',
-      endDate: filterOption.endDate || '',
-      status: filterOption.status ,
-      sortColumn: sortConfig?.column || 'createdAt',
-      sortDirection: sortConfig?.direction || 'desc',
+      startDate: debouncedFilterOptions.startDate || '',
+      endDate: debouncedFilterOptions.endDate || '',
+      status: debouncedFilterOptions.status ,
+      sortColumn: debouncedSortConfig?.column || 'createdAt',
+      sortDirection: debouncedSortConfig?.direction || 'desc',
       page:currentPage,
       pageSize: pageSize, 
     };
@@ -119,7 +121,7 @@ const AdvertisementTable: React.FC = () => {
 
     useEffect(() => {
         fetchData();
-    },[debouncedSearch, filterOption, currentPage, pageSize, sortConfig]);
+    },[debouncedSearch, debouncedFilterOptions, currentPage, pageSize, debouncedSortConfig]);
 
     const fetchData = async () => {
         try {
@@ -176,6 +178,7 @@ const AdvertisementTable: React.FC = () => {
         setAdvertisementData(advertisementData.advertisement);
         setResult(advertisementData.advertisement);
         setTotal(advertisementData.total);
+        successToast(response.data.message)
       }
 
     }
@@ -293,7 +296,7 @@ const AdvertisementTable: React.FC = () => {
           }));
 
           setErrors({});
-    }
+    };
 
     const handleFilter = (e: React.FormEvent<HTMLFormElement>) => {
 
@@ -435,8 +438,6 @@ const AdvertisementTable: React.FC = () => {
       setEditFormData(data);
       setEditModal(true);
     };
-
-
 
   return (
    

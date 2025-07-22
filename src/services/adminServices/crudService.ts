@@ -96,7 +96,7 @@ export const useCrudService = () => {
     const listUser = async (userId: string, searchFilterSortParams: SearchFilterSortParams) => {
         return await handleRequest({
             url:'/api/admin/users',
-            method:'POST',
+            method:'PATCH',
             data:{
                 id:userId
             },

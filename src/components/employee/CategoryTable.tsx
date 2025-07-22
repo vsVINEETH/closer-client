@@ -63,14 +63,16 @@ const CategoryTable: React.FC = () => {
     const [editFormData, setEditFormData] = useState<CategoryData | null>(null);
 
     const debouncedSearch = useDebounce(searchValue, 800);
+    const debouncedFilterOptions = useDebounce(filterOption, 1000);
+    const debouncedSortConfig = useDebounce(sortConfig, 800);
 
     const searchFilterSortPagination = {
       search: debouncedSearch || '',
-      startDate: filterOption.startDate || '',
-      endDate: filterOption.endDate || '',
-      status: filterOption.status ,
-      sortColumn: sortConfig?.column || 'createdAt',
-      sortDirection: sortConfig?.direction || 'desc',
+      startDate: debouncedFilterOptions.startDate || '',
+      endDate: debouncedFilterOptions.endDate || '',
+      status: debouncedFilterOptions.status ,
+      sortColumn: debouncedSortConfig?.column || 'createdAt',
+      sortDirection: debouncedSortConfig?.direction || 'desc',
       page: currentPage,
       pageSize: pageSize, 
     };
@@ -78,7 +80,7 @@ const CategoryTable: React.FC = () => {
 
     useEffect(() => {
         fetchData();
-    }, [debouncedSearch, filterOption, currentPage, pageSize, sortConfig]);
+    }, [debouncedSearch, debouncedFilterOptions, currentPage, pageSize, debouncedSortConfig]);
 
 
     const fetchData = async () => {
@@ -125,7 +127,8 @@ const CategoryTable: React.FC = () => {
             const data = response.data;
              setCategoryData(data.category);
             setResult(data.category);
-            setTotal(data.total)
+            setTotal(data.total);
+            successToast('Category status updated')
         }
     }
 
@@ -478,7 +481,7 @@ const CategoryTable: React.FC = () => {
                 <button
                     type="button"
                     onClick={() => setEditModal(false)}
-                    className="px-4 py-2 bg-lightGray rounded-md"
+                    className="px-4 py-2 bg-lightGray dark:text-black rounded-md"
                 >
                     Cancel
                 </button>

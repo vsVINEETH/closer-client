@@ -11,24 +11,24 @@ const download = (salesData: Report["salesData"]) => {
   // Process event sales
   const eventDailySales = salesData.eventSales.flatMap((event) =>
     event.dailySales.map((sale) => ({
-      Date: sale.date,
+      Date: sale.createdAt,
       Month: event.month,
       Category: "Event",
       "Plan Type": "-", // No plan type for events
-      "Tickets Sold": sale.count,
-      "Total Sales": sale.amount,
+      "Tickets Sold": sale.billedSlots,
+      "Total Sales": sale.billedAmount,
     }))
   );
 
   // Process subscription sales
   const subscriptionDailySales = salesData.subscriptionSales.flatMap((subscription) =>
     subscription.dailySales.map((sale) => ({
-      Date: sale.date,
+      Date: sale.createdAt,
       Month: subscription.month,
       Category: "Subscription",
       "Plan Type": subscription.planType,
       "Tickets Sold": sale.count,
-      "Total Sales": sale.amount,
+      "Total Sales": sale.billedAmount,
     }))
   );
 
