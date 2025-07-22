@@ -10,7 +10,7 @@ import DataTable from '../reusables/Table';
 import { useDebounce } from '@/hooks/helperHooks/useDebounce';
 
 interface SubscriptionData {
-    _id:string,
+    id:string,
     planType: string,
     price: string,
     createdAt: string,
@@ -61,21 +61,23 @@ const SubscriptionTable: React.FC = () => {
     const {editSubscription, controllSubscriptionListing} = useSubscriptionCrud();
 
     const debouncedSearch = useDebounce(searchValue, 800);
+    const debouncedFilterOptions = useDebounce(filterOption, 1000);
+    const debouncedSortConfig = useDebounce(sortConfig, 800)
 
     const searchFilterSortPagination = {
       search: debouncedSearch || '',
-      startDate: filterOption.startDate || '',
-      endDate: filterOption.endDate || '',
-      status: filterOption.status ,
-      sortColumn: sortConfig?.column || 'createdAt',
-      sortDirection: sortConfig?.direction || 'desc',
+      startDate: debouncedFilterOptions.startDate || '',
+      endDate: debouncedFilterOptions.endDate || '',
+      status: debouncedFilterOptions.status ,
+      sortColumn: debouncedSortConfig?.column || 'createdAt',
+      sortDirection: debouncedSortConfig?.direction || 'desc',
       page: currentPage,
       pageSize: pageSize, 
     };
 
     useEffect(() => {
         fetchData();
-    }, [debouncedSearch, filterOption, currentPage, pageSize, sortConfig]);
+    }, [debouncedSearch, debouncedFilterOptions, currentPage, pageSize, debouncedSortConfig]);
 
     const fetchData = async () => {
         try {
@@ -90,7 +92,7 @@ const SubscriptionTable: React.FC = () => {
         } catch (error) {
             console.error(error)
             errorToast(error);
-        }
+        };
     };
 
     const handleEditSubmit = async (e: React.FormEvent) => {

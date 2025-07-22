@@ -6,6 +6,7 @@ import DownloadCSV from './CSV';
 import DownloadXLXS from './XLXS';
 import { Report } from '@/types/customTypes';
 import Tooltip from '../reusables/ToolTip';
+
 interface ReportsProps {
     salesData: Report['salesData']; //  `salesData` instead of full `Report`
   }

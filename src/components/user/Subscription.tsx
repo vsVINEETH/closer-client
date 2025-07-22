@@ -65,18 +65,18 @@ const Subscription: React.FC = () => {
       <div className="flex justify-center items-center mt-6 space-x-4">
         {subscriptions?.filter((plan: SubscriptionData) => plan.isListed).map((plan: SubscriptionData) => (
           <div
-            key={plan._id}
-            onClick={() => handlePlanSelect(plan._id)}
+            key={plan.id}
+            onClick={() => handlePlanSelect(plan.id)}
             className={`flex flex-col items-center px-4 py-3 border rounded-lg cursor-pointer transition ${
-              selectedPlan === plan._id
+              selectedPlan === plan.id
                 ? "border-customPink bg-pink-50 dark:bg-pink-900 shadow-md scale-105"
                 : "border-gray-300 dark:border-gray-600 hover:border-customPink"
             }`}
           >
-            <p className={`text-sm font-medium ${selectedPlan === plan._id ? "text-customPink dark:text-white" : "text-gray-900 dark:text-white"}`}>
+            <p className={`text-sm font-medium ${selectedPlan === plan.id ? "text-customPink dark:text-white" : "text-gray-900 dark:text-white"}`}>
               {plan.planType === "weekly" ? "1 Week" : plan.planType === "monthly" ? "1 Month" : "1 Year"}
             </p>
-            <p className={`text-xs ${selectedPlan === plan._id ? "text-customPink dark:text-lightGray" : "text-gray-600 dark:text-gray-400"}`}>
+            <p className={`text-xs ${selectedPlan === plan.id ? "text-customPink dark:text-lightGray" : "text-gray-600 dark:text-gray-400"}`}>
               ₹{plan.price}
             </p>
           </div>

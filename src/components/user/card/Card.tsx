@@ -1,5 +1,4 @@
 "use client";
-
 import type React from "react";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -55,6 +54,17 @@ const ProfileCard: React.FC = () => {
     lookingFor: preference?.lookingFor || userInfo?.lookingFor,
   };
 
+  const searchFilterSortPagination = {
+    search:'',
+    startDate:'',
+    endDate:'',
+    status: true,
+    sortColumn: 'createdAt',
+    sortDirection: 'desc',
+    page: 1,
+    pageSize: 3, 
+  };
+
   useEffect(() => {
     if (hasLocation) {
       fetchUsers();
@@ -75,7 +85,7 @@ const ProfileCard: React.FC = () => {
   };
 
   const fetchAds = async () => {
-    const response = await getAdvertisementData();
+    const response = await getAdvertisementData(searchFilterSortPagination);
     if (response.data) {
       setAds(response.data);
     }
@@ -153,7 +163,7 @@ const ProfileCard: React.FC = () => {
     }
 
     const response = await blockUser(
-      currentUser?._id,
+      currentUser?.id,
       userInfo?.id || "",
       userPreferences
     );
@@ -171,7 +181,7 @@ const ProfileCard: React.FC = () => {
     if (!confirm || !userInfo?.id) return;
 
     const response = await markReportUser(
-      currentUser?._id,
+      currentUser?.id,
       userInfo?.id || "",
       userPreferences
     );
@@ -187,14 +197,14 @@ const ProfileCard: React.FC = () => {
   const handleInterest = () => {
     if (!socket) return;
     socket.emit("notification", {
-      user: currentUser?._id,
+      user: currentUser?.id,
       interactor: userInfo?.id,
       type: "interest",
       message: `${userInfo?.username} is interested in your profile!`,
       image: userInfo?.image,
     });
     successToast('Your interest has been shared');
-    handleNextUser();
+    setUserData(userData.filter((val) => val.id !== currentUser.id));
   };
 
   const cardVariants = {
@@ -227,7 +237,7 @@ const ProfileCard: React.FC = () => {
         {/* Motion Wrapper */}
         <AnimatePresence custom={direction} mode="popLayout">
           <motion.div
-            key={currentUser?._id} // Ensures smooth animation on change
+            key={currentUser?.id} // Ensures smooth animation on change
             custom={direction}
             variants={cardVariants}
             initial="enter"

@@ -215,7 +215,7 @@ export const getLineChartData = (dashboardData: DBD):{
       borderColor: string;
       borderWidth: number;
     }[] } => ({
-    labels: dashboardData.userData.genderSplit.map((item) => item._id),
+    labels: dashboardData.userData.genderSplit.map((item) => item._id ?? "Unknown"),
     datasets: [
       {
         data: dashboardData.userData.genderSplit.map((item) => item.count),

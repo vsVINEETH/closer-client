@@ -11,13 +11,13 @@ interface Blog {
   content: string;
   image: string[];
   createdAt: string;
-}
+};
 
 interface FilterOption {
   startDate: string;
   endDate: string;
   status: boolean | undefined;
-}
+};
 
 const Blog: React.FC = () => {
   const [blogs, setBlogs] = useState<Blog[]>([]);
@@ -45,7 +45,6 @@ const Blog: React.FC = () => {
     pageSize: pageSize, 
   };
 
-
   useEffect(() => {
     fetchBlogs();
   }, [debouncedSearch, filterOption, currentPage, pageSize, sortOption]);
@@ -56,19 +55,19 @@ const Blog: React.FC = () => {
     if (response.data) {
       setBlogs(response.data.data.contents);
       setTotal(response.data.data.total);
-    }
+    };
   };
 
   const handleNext = () => {
     if (currentPage < Math.ceil(totalPage / pageSize)) {
         setCurrentPage((prevPage) => prevPage + 1);
-    }
+    };
 };
 
 const handlePrevious = () => {
     if (currentPage > 1) {
         setCurrentPage((prevPage) => prevPage - 1);
-    }
+    };
 };
 
   return (

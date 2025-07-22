@@ -115,21 +115,23 @@ const ContentTable: React.FC = () => {
     const {getContentData} = useFetch();
 
     const debouncedSearch = useDebounce(searchValue, 800);
+    const debouncedFilterOptions = useDebounce(filterOption, 1000);
+    const debouncedSortConfig = useDebounce(sortConfig, 800);
 
     const searchFilterSortPagination = {
         search: debouncedSearch || '',
-        startDate: filterOption.startDate || '',
-        endDate: filterOption.endDate || '',
-        status: filterOption.status ,
-        sortColumn: sortConfig?.column || 'createdAt',
-        sortDirection: sortConfig?.direction || 'desc',
+        startDate: debouncedFilterOptions.startDate || '',
+        endDate: debouncedFilterOptions.endDate || '',
+        status: debouncedFilterOptions.status ,
+        sortColumn: debouncedSortConfig?.column || 'createdAt',
+        sortDirection: debouncedSortConfig?.direction || 'desc',
         page: currentPage,
         pageSize: pageSize, 
     };
 
     useEffect(() => {
      fetchData();
-    }, [debouncedSearch, filterOption, currentPage, pageSize, sortConfig]);
+    }, [debouncedSearch, debouncedFilterOptions, currentPage, pageSize, debouncedSortConfig]);
 
     const fetchData = async () => {
         try {
@@ -203,6 +205,7 @@ const ContentTable: React.FC = () => {
             setContentData(data.contents);
             setResult(data.contents);
             setTotal(data.total);
+            successToast('Content status updated')
         }
 
     }
@@ -450,6 +453,7 @@ const ContentTable: React.FC = () => {
             setContentData(data.contents);
             setResult(data.contents);
             setTotal(data.total);
+            successToast('Content updated successfully')
         }
         }
     };
@@ -742,7 +746,7 @@ const ContentTable: React.FC = () => {
                 <button
                     type="button"
                     onClick={() => setFilterModal(false)}
-                    className="px-4 py-2 bg-lightGray rounded-md"
+                    className="px-4 py-2 bg-lightGray dark:text-black rounded-md"
                 >
                     Cancel
                 </button>

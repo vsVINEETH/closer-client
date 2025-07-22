@@ -31,9 +31,9 @@ export const useFetch = () => {
         return response;
     };
 
-    const getAdvertisementData = async () => {
+    const getAdvertisementData = async (searchFilterSortParams: SearchFilterSortParams) => {
         setLoading(true);
-        const response = await fetchAdvertisementData();
+        const response = await fetchAdvertisementData(searchFilterSortParams);
         if(response.error){
          setError(response.error)
          errorToast(response.error);

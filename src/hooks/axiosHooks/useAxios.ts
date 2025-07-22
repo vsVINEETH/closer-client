@@ -1,5 +1,5 @@
 'use client';
-import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig, AxiosRequestConfig } from "axios";
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
@@ -13,17 +13,17 @@ interface RequestOptions {
   url: string;
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   headers?: Record<string, string>;
-  data?: Record<string, any>;
+  data?: AxiosRequestConfig['data']//Record<string, any>;
   params?: Record<string, any>;
   withCredentials?: boolean,
-}
+};
 
 interface UseAxiosReturn<T> {
   response: T | null;
   error: string | null;
   loading: boolean;
   handleRequest: (options: RequestOptions) => Promise<{ data?: T; error?: string }>;
-}
+};
 
 const useAxios = <T = any>(): UseAxiosReturn<T> => {
   const [response, setResponse] = useState<T | null>(null);

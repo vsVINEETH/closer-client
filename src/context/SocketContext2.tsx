@@ -110,6 +110,7 @@ export const SocketContextProvider = ({
   const [ongoingCall, setOngoingCall] = useState<OngoingCall | null>(null);
   const [callDuration, setCallDuration] = useState<number>(0);
   const [connect, setConnect] = useState<boolean>(false);
+  const connectRef = useRef(false);
   const [isCallEnded, setIsCallEnded] = useState<boolean>(false);
   const [isVoiceCall, setIsVoiceCall] = useState<boolean>(false);
 
@@ -187,6 +188,7 @@ export const SocketContextProvider = ({
   //showing the notification
   const onIncomingCall = (participants: Participants) => {
     setConnect(true);
+    connectRef.current = true
     setIsVoiceCall(participants.isVoiceCall);
     setOngoingCall({
       participants,
@@ -275,7 +277,6 @@ export const SocketContextProvider = ({
     const iceServers: RTCIceServer[] = [
       {
         urls: [
-          "stun:stun.l.google.com:19302",
           "stun:stun1.l.google.com:19302",
           "stun:stun2.l.google.com:19302",
           "stun:stun3.l.google.com:19302",
@@ -337,12 +338,13 @@ export const SocketContextProvider = ({
   const handleCall = async (user: SocketUser, isAudio: boolean) => {
     setIsCallEnded(false);
     setConnect(false);
+    connectRef.current = false
     if (!currentSocketUser || !socket) return;
     const stream = await getMediaStream("faceMode", isAudio);
     if (!stream) {
       console.error("No stream in handleCall");
       return;
-    }
+    };
 
     const participants = {
       caller: currentSocketUser,
@@ -388,11 +390,12 @@ export const SocketContextProvider = ({
   const handleJoinCall = async (ongoingCall: OngoingCall) => {
     setIsCallEnded(false);
     setConnect(false);
+    connectRef.current = false
     setIsVoiceCall(ongoingCall.isVoiceCall as boolean);
     setOngoingCall((prev) => {
       if (prev) {
         return { ...prev, isRinging: false };
-      }
+      };
       return prev;
     });
 
@@ -404,7 +407,7 @@ export const SocketContextProvider = ({
     }
     //setLocalStream(stream);
     localStream.current = stream;
-
+    console.log(localStream.current, 'stream')
     // Create peer as non-initiator for answering
     const newPeer = await createPeer(stream, false);
     setPeer({
@@ -463,21 +466,20 @@ export const SocketContextProvider = ({
     try {
       if (!localStream.current) {
         console.warn("Local stream is missing, waiting for it...");
-        return;
+        //return;
+              // Fetch media stream dynamically if missing
+        // let stream: MediaStream | null = localStream.current ;
+        // if (!stream) {
+        //   console.warn("Local stream is missing, fetching...");
+
+        //   stream = await getMediaStream("faceMode", data.ongoingCall.isVoiceCall);
+        //   if (!stream) {
+        //     console.error("Failed to get local stream");
+        //     return;
+        //   };
+        //   localStream.current = stream;
+        // }
       }
-
-      // Fetch media stream dynamically if missing
-      // let stream: MediaStream | null = localStream ;
-      // if (!stream) {
-      //   console.warn("Local stream is missing, fetching...");
-
-      //   stream = await getMediaStream("faceMode", data.ongoingCall.isVoiceCall);
-      //   if (!stream) {
-      //     console.error("Failed to get local stream");
-      //     return;
-      //   }
-      //   setLocalStream(stream);
-      // }
 
       // If peer exists, just signal
       if (peer?.peerConnection && !peer.peerConnection.destroyed) {
@@ -489,7 +491,7 @@ export const SocketContextProvider = ({
       // Create new peer if we don't have one
       if (!peer?.peerConnection) {
         console.log("Creating new peer in completePeerConnection");
-        const newPeer = await createPeer(localStream.current, false);
+        const newPeer = await createPeer(localStream.current as MediaStream, false);
         setPeer({
           peerConnection: newPeer,
           participantUser: data.ongoingCall.participants.receiver,
@@ -514,6 +516,7 @@ export const SocketContextProvider = ({
       handleHangup({});
     }
   };
+
 
   //online-status
   const checkOnlineStatus = (oppositeUserId: string) => {
@@ -599,7 +602,7 @@ export const SocketContextProvider = ({
   // //autho reject
   useEffect(() => {
     let timeOutInterval: NodeJS.Timeout | null = null;
-    if (connect) {
+    if (connectRef.current) {
       timeOutInterval = setTimeout(() => {
         handleHangup({
           ongoingCall: ongoingCall ? ongoingCall : undefined,
@@ -607,6 +610,7 @@ export const SocketContextProvider = ({
           isMissed: true,
         });
         setConnect(false);
+        connectRef.current = false
       }, 10000);
     }
     return () => {

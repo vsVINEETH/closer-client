@@ -237,7 +237,7 @@ const Wallet: React.FC = () => {
                   <p className="text-sm text-gray-600 dark:text-lightGray">{new Date(transaction.createdAt).toLocaleDateString()}</p>
                 </div>
                 <p className={`font-bold  ${transaction.paymentType === 'credit' ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
-                  {transaction.paymentType === 'credit' ? `+₹${transaction.amount.toFixed(2)}` : `-₹${transaction.amount.toFixed(2)}`}
+                  {transaction.paymentType === 'credit' ? `+₹${transaction.amount.toFixed(2)}` : `-₹${Math.abs(transaction.amount).toFixed(2)}`}
                 </p>
               </motion.li>
             ))}

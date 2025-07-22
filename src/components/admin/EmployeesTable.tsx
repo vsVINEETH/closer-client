@@ -69,21 +69,23 @@ const EmployeesTable: React.FC = () => {
     const {getEmployeeData} = useFetch();
 
     const debouncedSearch = useDebounce(searchValue, 800);
+    const debouncedFilterOptions = useDebounce(filterOption, 1000);
+    const debouncedSortConfig = useDebounce(sortConfig, 800);
 
     const searchFilterSortPagination = {
         search: debouncedSearch || '',
-        startDate: filterOption.startDate || '',
-        endDate: filterOption.endDate || '',
-        status: filterOption.status ,
-        sortColumn: sortConfig?.column || 'createdAt',
-        sortDirection: sortConfig?.direction || 'desc',
+        startDate: debouncedFilterOptions.startDate || '',
+        endDate: debouncedFilterOptions.endDate || '',
+        status: debouncedFilterOptions.status ,
+        sortColumn: debouncedSortConfig?.column || 'createdAt',
+        sortDirection: debouncedSortConfig?.direction || 'desc',
         page: currentPage,
         pageSize: pageSize, 
       };
 
     useEffect(() => {
         fetchData();
-    }, [debouncedSearch, filterOption, currentPage, pageSize, sortConfig]);
+    }, [debouncedSearch, debouncedFilterOptions, currentPage, pageSize, debouncedSortConfig]);
 
     const fetchData = async () => {
         try {

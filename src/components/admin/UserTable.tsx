@@ -71,14 +71,16 @@ const UserTable: React.FC = () => {
     const {blockUser, banUser, unbanUser} = useUserCrud();
 
     const debouncedSearch = useDebounce(searchValue, 800);
+    const debouncedFilterOptions = useDebounce(filterOption, 1000);
+    const debouncedSortConfig = useDebounce(sortConfig, 800);
 
     const searchFilterSortPagination = {
         search: debouncedSearch || '',
-        startDate: filterOption.startDate || '',
-        endDate: filterOption.endDate || '',
-        status: filterOption.status ,
-        sortColumn: sortConfig?.column || 'createdAt',
-        sortDirection: sortConfig?.direction || 'desc',
+        startDate: debouncedFilterOptions.startDate || '',
+        endDate: debouncedFilterOptions.endDate || '',
+        status: debouncedFilterOptions.status ,
+        sortColumn: debouncedSortConfig?.column || 'createdAt',
+        sortDirection: debouncedSortConfig?.direction || 'desc',
         page: currentPage,
         pageSize: pageSize, 
     };
@@ -86,24 +88,24 @@ const UserTable: React.FC = () => {
 
     useEffect(() => {
         fetchData();
-    }, [debouncedSearch, filterOption, currentPage, pageSize, sortConfig]);
+    }, [debouncedSearch, debouncedFilterOptions, currentPage, pageSize, debouncedSortConfig]);
 
 
     const fetchData = async () => {
         try {
-            const response = await getUsersData(searchFilterSortPagination);
 
+            const response = await getUsersData(searchFilterSortPagination);
             if(response.data){
                 const data = response.data;
                 setUserData(data.users);
                 setResult(data.users);
-                setTotal(data.total)
-            }
+                setTotal(data.total);
+            };
         } catch (error) {
             console.error(error)
             errorToast('Something happend')
-        }
-    }
+        };
+    };
 
     const handleBlock = async (userId: string, index: number) => {
         const confirm = await blockConfirm(!result[index].isBlocked);
@@ -114,10 +116,10 @@ const UserTable: React.FC = () => {
             const data = response.data;
             setUserData(data.users);
             setResult(data.users);
-            setTotal(data.total)
+            setTotal(data.total);
+            successToast('User status updated')
         };
     };
-
 
     //ban
     const handleBanUser = async(userId: string, duration: string, index: number) => {
@@ -130,9 +132,9 @@ const UserTable: React.FC = () => {
             setUserData(data.users);
             setResult(data.users);
             setTotal(data.total)
-            successToast("User banned");
-        }
-    }
+            successToast('User banned');
+        };
+    };
 
     const handleUnban = async(userId: string, index: number) => {
         const confirm = await banConfirm(!result[index].isBanned);
@@ -145,8 +147,8 @@ const UserTable: React.FC = () => {
             setResult(data.users);
             setTotal(data.total)
             successToast("User unbanned");
-        }
-    }
+        };
+    };
 
 
     const handleSort = (column: keyof UserData) => {

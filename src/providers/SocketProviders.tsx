@@ -11,4 +11,4 @@ const SocketProvider = ({children}: {children: React.ReactNode}) => {
     )
 };
 
-export default SocketProvider
+export default SocketProvider;
